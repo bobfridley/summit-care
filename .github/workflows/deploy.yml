@@ -19,4 +19,4 @@ jobs:
 
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no root@77.37.63.202 "cd /var/www/html && git pull origin main"
+        ssh -o StrictHostKeyChecking=no root@77.37.63.202 "cd /var/www/summit-care && git pull origin main"
