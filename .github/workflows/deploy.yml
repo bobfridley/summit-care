@@ -3,24 +3,31 @@ name: Deploy to Hostinger VPS
 on:
   push:
     branches:
-      - main  # Change if your branch name is different
+      - main  # Change if your main branch has a different name
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout your repository code
+      # Step 1: Checkout your repository code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up the SSH agent and add your private key from GitHub secrets
+      # Step 2: Set up the SSH agent and add your private key from GitHub secrets
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      # Deploy to your VPS via SSH
+      # Step 3: Deploy and run post-deployment commands on your VPS
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no root@77.37.63.202 "cd /var/www/summit-care && git pull origin main"
+          ssh -o StrictHostKeyChecking=no root@77.37.63.202 "
+            cd /var/www/summit-care && \
+            git pull origin main && \
+            npm install && \
+            npm run build && \
+            pm2 reload all && \
+            systemctl restart nginx
+          "
