@@ -1,8 +1,7 @@
-# Base44 App
+# SummitCare
 
 
-This app was created automatically by Base44.
-It's a Vite+React app that communicates with the Base44 API.
+SummitCare is your essential companion for high-altitude adventures. Log your medications, understand their specific impact on mountaineering, and receive tailored insights to ensure your safety and well-being on every climb. From crucial altitude warnings to personalized risk assessments, SummitCare empowers you to prepare confidently for your next summit.
 
 ## Running the app
 
@@ -16,5 +15,3 @@ npm run dev
 ```bash
 npm run build
 ```
-
-For more information and support, please contact Base44 support at app@base44.com.
