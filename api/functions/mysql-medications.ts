@@ -2,7 +2,7 @@ import { withCORS } from "../utils/cors";
 import { sendJSON, handleError, HttpError } from "../utils/errors";
 import { getPool } from "../utils/mysql";
 import mysql from "mysql2/promise";
-import { requireUser } from "../utils/auth";
+import { requireUser, tryRequireUser } from "../utils/auth";
 
 function traceId() {
   return `b44-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -42,7 +42,7 @@ async function fetchMedicationOwner(id: number): Promise<string | null> {
 
 async function listMedications(params: {
   user_id?: string;
-  q?: string;      // text search on name
+  q?: string;
   limit?: number;
   offset?: number;
 }) {
@@ -75,68 +75,6 @@ async function listMedications(params: {
   return rows as unknown as MedicationRow[];
 }
 
-async function createMedication(input: CreateMedication) {
-  const p = await getPool();
-  const name = (input.name ?? "").toString().trim();
-  if (!name) throw new HttpError(400, "Missing required field: 'name'");
-
-  const user_id = input.user_id ? String(input.user_id) : null;
-  const dose = input.dose == null ? null : String(input.dose);
-  const route = input.route == null ? null : String(input.route);
-  const frequency = input.frequency == null ? null : String(input.frequency);
-  const started_on = input.started_on == null ? null : String(input.started_on);
-  const stopped_on = input.stopped_on == null ? null : String(input.stopped_on);
-  const notes = input.notes == null ? null : String(input.notes);
-
-  const [result] = await p.execute<mysql.ResultSetHeader>(
-    `INSERT INTO medications (user_id, name, dose, route, frequency, started_on, stopped_on, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [user_id, name, dose, route, frequency, started_on, stopped_on, notes]
-  );
-
-  return {
-    id: result.insertId,
-    user_id, name, dose, route, frequency, started_on, stopped_on, notes,
-  } satisfies Partial<MedicationRow>;
-}
-
-async function updateMedication(id: number, input: Partial<MedicationRow>) {
-  const p = await getPool();
-  if (!Number.isFinite(id)) throw new HttpError(400, "Invalid id");
-
-  const allowed: (keyof MedicationRow)[] = [
-    "name", "dose", "route", "frequency", "started_on", "stopped_on", "notes",
-  ];
-  const sets: string[] = [];
-  const args: any[] = [];
-
-  for (const key of allowed) {
-    if (key in input && input[key as keyof MedicationRow] !== undefined) {
-      sets.push(`${key} = ?`);
-      // @ts-ignore
-      args.push(input[key]);
-    }
-  }
-  if (!sets.length) throw new HttpError(400, "No updatable fields provided");
-
-  args.push(id);
-  const [result] = await p.execute<mysql.ResultSetHeader>(
-    `UPDATE medications SET ${sets.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-    args
-  );
-  return { affectedRows: result.affectedRows };
-}
-
-async function deleteMedication(id: number) {
-  const p = await getPool();
-  if (!Number.isFinite(id)) throw new HttpError(400, "Invalid id");
-  const [result] = await p.execute<mysql.ResultSetHeader>(
-    `DELETE FROM medications WHERE id = ?`,
-    [id]
-  );
-  return { affectedRows: result.affectedRows };
-}
-
 /* ------------------------------- HTTP handler ------------------------------ */
 export default withCORS(async (req, res) => {
   const tid = traceId();
@@ -153,7 +91,6 @@ export default withCORS(async (req, res) => {
     }
 
     if (req.method === "HEAD") {
-      // lightweight aliveness
       const p = await getPool();
       const c = await p.getConnection(); try { await c.ping(); } finally { c.release(); }
       res.setHeader("Cache-Control", "no-store");
@@ -162,21 +99,24 @@ export default withCORS(async (req, res) => {
       return;
     }
 
-    // Parse URL for query + id param
     const url = new URL(req.url ?? "", "http://localhost");
     const idParam = url.pathname.match(/\/api\/mysql-medications\/(\d+)$/)?.[1];
 
     if (req.method === "GET") {
-      const user_id = url.searchParams.get("user_id") ?? undefined;
+      const authed = await tryRequireUser(req);
+      // If authed, always scope to the caller's own rows.
+      const effectiveUserId = authed?.user_id ?? (url.searchParams.get("user_id") ?? undefined);
+
       const q = url.searchParams.get("q") ?? undefined;
       const limit = url.searchParams.get("limit");
       const offset = url.searchParams.get("offset");
       const rows = await listMedications({
-        user_id,
+        user_id: effectiveUserId,
         q,
         limit: limit ? parseInt(limit, 10) : undefined,
         offset: offset ? parseInt(offset, 10) : undefined,
       });
+
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Trace-Id", tid);
       sendJSON(res, 200, { ok: true, rows, count: rows.length, traceId: tid });
@@ -184,9 +124,39 @@ export default withCORS(async (req, res) => {
     }
 
     if (req.method === "POST") {
-      const { user_id } = await requireUser(req);              // enforce ownership
+      const { user_id } = await requireUser(req);
       const body = { ...(req.body ?? {}), user_id } as CreateMedication;
-      const created = await createMedication(body);
+      const p = await getPool();
+      const name = (body.name ?? "").toString().trim();
+      if (!name) throw new HttpError(400, "Missing required field: 'name'");
+
+      const [result] = await p.execute<mysql.ResultSetHeader>(
+        `INSERT INTO medications (user_id, name, dose, route, frequency, started_on, stopped_on, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          user_id,
+          name,
+          body.dose ?? null,
+          body.route ?? null,
+          body.frequency ?? null,
+          body.started_on ?? null,
+          body.stopped_on ?? null,
+          body.notes ?? null,
+        ]
+      );
+
+      const created = {
+        id: result.insertId,
+        user_id,
+        name,
+        dose: body.dose ?? null,
+        route: body.route ?? null,
+        frequency: body.frequency ?? null,
+        started_on: body.started_on ?? null,
+        stopped_on: body.stopped_on ?? null,
+        notes: body.notes ?? null,
+      };
+
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Trace-Id", tid);
       sendJSON(res, 200, { ok: true, created, traceId: tid });
@@ -199,11 +169,33 @@ export default withCORS(async (req, res) => {
       const { user_id } = await requireUser(req);
       const owner = await fetchMedicationOwner(id);
       if (!owner || owner !== user_id) throw new HttpError(403, "Forbidden");
+
+      const p = await getPool();
       const body = req.body ?? {};
-      const result = await updateMedication(id, body);
+      const allowed: (keyof MedicationRow)[] = [
+        "name", "dose", "route", "frequency", "started_on", "stopped_on", "notes",
+      ];
+      const sets: string[] = [];
+      const args: any[] = [];
+
+      for (const key of allowed) {
+        if (key in body && body[key as keyof MedicationRow] !== undefined) {
+          sets.push(`${key} = ?`);
+          // @ts-ignore
+          args.push(body[key]);
+        }
+      }
+      if (!sets.length) throw new HttpError(400, "No updatable fields provided");
+      args.push(id);
+
+      const [result] = await p.execute<mysql.ResultSetHeader>(
+        `UPDATE medications SET ${sets.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        args
+      );
+
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Trace-Id", tid);
-      sendJSON(res, 200, { ok: true, updated: result, traceId: tid });
+      sendJSON(res, 200, { ok: true, updated: { affectedRows: result.affectedRows }, traceId: tid });
       return;
     }
 
@@ -213,10 +205,16 @@ export default withCORS(async (req, res) => {
       const { user_id } = await requireUser(req);
       const owner = await fetchMedicationOwner(id);
       if (!owner || owner !== user_id) throw new HttpError(403, "Forbidden");
-      const result = await deleteMedication(id);
+
+      const p = await getPool();
+      const [result] = await p.execute<mysql.ResultSetHeader>(
+        `DELETE FROM medications WHERE id = ?`,
+        [id]
+      );
+
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Trace-Id", tid);
-      sendJSON(res, 200, { ok: true, deleted: result, traceId: tid });
+      sendJSON(res, 200, { ok: true, deleted: { affectedRows: result.affectedRows }, traceId: tid });
       return;
     }
   } catch (err) {

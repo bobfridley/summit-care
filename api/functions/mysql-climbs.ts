@@ -2,7 +2,7 @@ import { withCORS } from "../utils/cors";
 import { sendJSON, handleError, HttpError } from "../utils/errors";
 import { getPool } from "../utils/mysql";
 import mysql from "mysql2/promise";
-import { requireUser } from "../utils/auth";
+import { requireUser, tryRequireUser } from "../utils/auth";
 
 function traceId() {
   return `b44-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -62,75 +62,6 @@ async function listClimbs(params: { climber_id?: string; limit?: number }) {
   }
 }
 
-async function insertClimb(input: Partial<ClimbRow>) {
-  const p = await getPool();
-
-  const peak = (input.peak ?? "").toString().trim();
-  const route = (input.route ?? "").toString().trim();
-  const date = (input.date ?? "").toString().trim(); // expect YYYY-MM-DD
-  const climber_id = input.climber_id ? String(input.climber_id) : null;
-  const duration_hours =
-    input.duration_hours == null ? null : Number(input.duration_hours);
-  const notes = input.notes == null ? null : String(input.notes);
-
-  if (!peak || !date) {
-    throw new HttpError(400, "Missing required fields: 'peak' and 'date'");
-  }
-
-  const [result] = await p.execute<mysql.ResultSetHeader>(
-    `INSERT INTO climbs (climber_id, peak, route, date, duration_hours, notes)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [climber_id, peak, route || null, date, duration_hours, notes]
-  );
-
-  return {
-    id: result.insertId,
-    climber_id,
-    peak,
-    route: route || null,
-    date,
-    duration_hours,
-    notes,
-  } satisfies Partial<ClimbRow>;
-}
-
-async function updateClimb(id: number, input: Partial<ClimbRow>) {
-  const p = await getPool();
-  if (!Number.isFinite(id)) throw new HttpError(400, "Invalid id");
-
-  const allowed: (keyof ClimbRow)[] = [
-    "peak", "route", "date", "duration_hours", "notes",
-  ];
-  const sets: string[] = [];
-  const args: any[] = [];
-
-  for (const key of allowed) {
-    if (key in input && input[key as keyof ClimbRow] !== undefined) {
-      sets.push(`${key} = ?`);
-      // @ts-ignore
-      args.push(input[key]);
-    }
-  }
-  if (!sets.length) throw new HttpError(400, "No updatable fields provided");
-
-  args.push(id);
-  const [result] = await p.execute<mysql.ResultSetHeader>(
-    `UPDATE climbs SET ${sets.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-    args
-  );
-  return { affectedRows: result.affectedRows };
-}
-
-async function deleteClimb(id: number) {
-  const p = await getPool();
-  if (!Number.isFinite(id)) throw new HttpError(400, "Invalid id");
-  const [result] = await p.execute<mysql.ResultSetHeader>(
-    `DELETE FROM climbs WHERE id = ?`,
-    [id]
-  );
-  return { affectedRows: result.affectedRows };
-}
-
 /* ------------------------------- HTTP handler ------------------------------ */
 export default withCORS(async (req, res) => {
   const tid = traceId();
@@ -159,10 +90,12 @@ export default withCORS(async (req, res) => {
     const idParam = url.pathname.match(/\/api\/mysql-climbs\/(\d+)$/)?.[1];
 
     if (req.method === "GET") {
-      const climber_id = url.searchParams.get("climber_id") ?? undefined;
+      const authed = await tryRequireUser(req);
+      const effectiveClimberId = authed?.user_id ?? (url.searchParams.get("climber_id") ?? undefined);
       const limitParam = url.searchParams.get("limit");
       const limit = limitParam ? parseInt(limitParam, 10) : undefined;
-      const rows = await listClimbs({ climber_id, limit });
+
+      const rows = await listClimbs({ climber_id: effectiveClimberId, limit });
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Trace-Id", tid);
       sendJSON(res, 200, { ok: true, rows, count: rows.length, traceId: tid });
@@ -170,9 +103,38 @@ export default withCORS(async (req, res) => {
     }
 
     if (req.method === "POST") {
-      const { user_id } = await requireUser(req); // enforce ownership
+      const { user_id } = await requireUser(req);
       const body = { ...(req.body ?? {}), climber_id: user_id } as Partial<ClimbRow>;
-      const created = await insertClimb(body);
+
+      // minimal validation
+      const peak = (body.peak ?? "").toString().trim();
+      const date = (body.date ?? "").toString().trim();
+      if (!peak || !date) throw new HttpError(400, "Missing required fields: 'peak' and 'date'");
+
+      const p = await getPool();
+      const [result] = await p.execute<mysql.ResultSetHeader>(
+        `INSERT INTO climbs (climber_id, peak, route, date, duration_hours, notes)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          user_id,
+          peak,
+          body.route ? String(body.route) : null,
+          date,
+          body.duration_hours == null ? null : Number(body.duration_hours),
+          body.notes == null ? null : String(body.notes),
+        ]
+      );
+
+      const created = {
+        id: result.insertId,
+        climber_id: user_id,
+        peak,
+        route: body.route ? String(body.route) : null,
+        date,
+        duration_hours: body.duration_hours == null ? null : Number(body.duration_hours),
+        notes: body.notes == null ? null : String(body.notes),
+      };
+
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Trace-Id", tid);
       sendJSON(res, 200, { ok: true, created, traceId: tid });
@@ -185,11 +147,31 @@ export default withCORS(async (req, res) => {
       const { user_id } = await requireUser(req);
       const owner = await fetchClimbOwner(id);
       if (!owner || owner !== user_id) throw new HttpError(403, "Forbidden");
+
       const body = req.body ?? {};
-      const result = await updateClimb(id, body);
+      const allowed: (keyof ClimbRow)[] = ["peak", "route", "date", "duration_hours", "notes"];
+      const sets: string[] = [];
+      const args: any[] = [];
+
+      for (const key of allowed) {
+        if (key in body && body[key as keyof ClimbRow] !== undefined) {
+          sets.push(`${key} = ?`);
+          // @ts-ignore
+          args.push(body[key]);
+        }
+      }
+      if (!sets.length) throw new HttpError(400, "No updatable fields provided");
+
+      const p = await getPool();
+      args.push(id);
+      const [result] = await p.execute<mysql.ResultSetHeader>(
+        `UPDATE climbs SET ${sets.join(", ")}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        args
+      );
+
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Trace-Id", tid);
-      sendJSON(res, 200, { ok: true, updated: result, traceId: tid });
+      sendJSON(res, 200, { ok: true, updated: { affectedRows: result.affectedRows }, traceId: tid });
       return;
     }
 
@@ -199,10 +181,16 @@ export default withCORS(async (req, res) => {
       const { user_id } = await requireUser(req);
       const owner = await fetchClimbOwner(id);
       if (!owner || owner !== user_id) throw new HttpError(403, "Forbidden");
-      const result = await deleteClimb(id);
+
+      const p = await getPool();
+      const [result] = await p.execute<mysql.ResultSetHeader>(
+        `DELETE FROM climbs WHERE id = ?`,
+        [id]
+      );
+
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("X-Trace-Id", tid);
-      sendJSON(res, 200, { ok: true, deleted: result, traceId: tid });
+      sendJSON(res, 200, { ok: true, deleted: { affectedRows: result.affectedRows }, traceId: tid });
       return;
     }
   } catch (err) {
