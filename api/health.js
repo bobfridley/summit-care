@@ -1,3 +1,6 @@
+// api/health.js
+import { pingDb } from './functions/dbHelpers.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://healthandhiking.com');
   res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS');
@@ -10,11 +13,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method Not Allowed' });
   }
 
-  const now = new Date();
-  return res.status(200).json({
-    ok: true,
-    service: 'health',
-    time: now.toISOString(),
-    unix: Math.floor(now.getTime() / 1000),
-  });
+  try {
+      let dbOk = false;
+      try {
+        await pingDb();
+        dbOk = true;
+      } catch (_) {
+        dbOk = false;
+      }
+      const now = new Date();
+      return res.status(200).json({
+        ok: true,
+        service: 'health',
+        time: now.toISOString(),
+        unix: Math.floor(now.getTime() / 1000),
+        checks: { database: dbOk ? 'ok' : 'fail' }
+      });
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: e?.message || String(e) });
+    }
 }

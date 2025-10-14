@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TripPlanner from "../components/reports/TripPlanner";
 import RiskSummary from "../components/reports/RiskSummary";
 import MedicationSummary from "../components/reports/MedicationSummary";
+// import DemoDisclaimer from "../components/common/DemoDisclaimer"; // removed; Reports is not treated as medication-only page
 
 export default function ReportsPage() {
   const [medications, setMedications] = useState([]);
@@ -91,13 +92,7 @@ export default function ReportsPage() {
           </Button>
         </div>
 
-        <Alert variant="destructive" className="mb-6 bg-red-50">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle className="font-semibold">Important Safety Warning</AlertTitle>
-          <AlertDescription>
-            The generated report is based on sample data and is for demonstration purposes only. Do not use it for real medical decisions. Share it with a qualified physician.
-          </AlertDescription>
-        </Alert>
+        {/* Removed inline disclaimer; Reports will not show full banner now */}
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">

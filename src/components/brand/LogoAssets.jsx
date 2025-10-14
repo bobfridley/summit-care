@@ -1,3 +1,4 @@
+
 export const summitCareMarkColor = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -53,4 +54,34 @@ export const summitCareHorizontalColor = `<?xml version="1.0" encoding="UTF-8"?>
       Altitude Medication Tracker
     </text>
   </g>
+</svg>`;
+
+export const summitCareSidebarBadge = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad-summitcare-badge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D5016"/>
+      <stop offset="50%" stop-color="#4A7C59"/>
+      <stop offset="100%" stop-color="#4A6FA5"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded gradient tile -->
+  <rect x="32" y="32" width="448" height="448" rx="64" fill="url(#grad-summitcare-badge)"/>
+  <!-- White mountain glyph -->
+  <g transform="translate(0, 8)">
+    <!-- Back mountain -->
+    <path d="M 116 392 L 224 212 L 332 392 Z" fill="rgba(255,255,255,0.7)"/>
+    <!-- Front mountain -->
+    <path d="M 176 392 L 304 168 L 432 392 Z" fill="#FFFFFF"/>
+    <!-- Snow cap on front mountain -->
+    <path d="M 304 168 L 332 224 L 318 220 L 304 248 L 290 220 L 276 224 Z" fill="#EAF2FF" opacity="0.9"/>
+  </g>
+</svg>`;
+
+export const dashboardOverlaySquarePen = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+  viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+  stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-square-pen">
+  <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+  <path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"></path>
 </svg>`;

@@ -1,6 +1,7 @@
 {
   "version": 2,
   "regions": ["iad1", "sfo1"],
+
   "headers": [
     {
       "source": "/api/(.*)",
@@ -9,5 +10,47 @@
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }
-  ]
+  ],
+
+  "builds": [
+    {
+      "src": "api/functions/*.ts",
+      "use": "@vercel/node",
+      "config": { "runtime": "nodejs20.x" }
+    },
+    {
+      "src": "web/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "web/dist" }
+    }
+  ],
+
+  "functions": {
+    "api/functions/*.ts": {
+      "runtime": "nodejs20.x",
+      "regions": ["iad1", "sfo1"]
+    }
+  },
+
+  "routes": [
+    /* -------- API endpoints -------- */
+    { "src": "/api/health",            "dest": "api/functions/health.ts" },
+    { "src": "/api/backend-health",    "dest": "api/functions/backend-health.ts" },
+    { "src": "/api/egress-ip",         "dest": "api/functions/egress-ip.ts" },
+    { "src": "/api/openai-chat",       "dest": "api/functions/openai-chat.ts" },
+    { "src": "/api/contraindications", "dest": "api/functions/contraindications.ts" },
+    { "src": "/api/ae-trends",         "dest": "api/functions/ae-trends.ts" },
+    { "src": "/api/db",                "dest": "api/functions/db.ts" },
+    { "src": "/api/mysql-climbs",      "dest": "api/functions/mysql-climbs.ts" },
+
+    /* -------- Static assets from web/dist (if they exist) -------- */
+    { "handle": "filesystem" },
+
+    /* -------- SPA fallback: send everything else to index.html -------- */
+    { "src": "/(.*)", "dest": "web/dist/index.html" }
+  ],
+
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

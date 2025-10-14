@@ -1,0 +1,21 @@
+{
+  "name": "healthandhiking-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev --local-config vercel.json",
+    "start": "vercel dev --local-config vercel.json",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@base44/sdk": "0.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

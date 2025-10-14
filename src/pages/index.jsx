@@ -20,6 +20,10 @@ import DBAccessHelp from "./DBAccessHelp";
 
 import MySQLSchema from "./MySQLSchema";
 
+import MySQLSampleData from "./MySQLSampleData";
+
+import Disclaimer from "./Disclaimer";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
@@ -43,6 +47,10 @@ const PAGES = {
     DBAccessHelp: DBAccessHelp,
     
     MySQLSchema: MySQLSchema,
+    
+    MySQLSampleData: MySQLSampleData,
+    
+    Disclaimer: Disclaimer,
     
 }
 
@@ -90,6 +98,10 @@ function PagesContent() {
                 <Route path="/DBAccessHelp" element={<DBAccessHelp />} />
                 
                 <Route path="/MySQLSchema" element={<MySQLSchema />} />
+                
+                <Route path="/MySQLSampleData" element={<MySQLSampleData />} />
+                
+                <Route path="/Disclaimer" element={<Disclaimer />} />
                 
             </Routes>
         </Layout>

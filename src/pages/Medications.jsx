@@ -7,6 +7,7 @@ import { mysqlMedications } from "@/api/functions"; // New import
 
 import MedicationForm from "../components/medications/MedicationForm";
 import MedicationList from "../components/medications/MedicationList";
+// import DemoDisclaimer from "../components/common/DemoDisclaimer"; // removed, shown from Layout
 
 export default function MedicationsPage() {
   const [medications, setMedications] = useState([]);
@@ -74,12 +75,12 @@ export default function MedicationsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-warm via-white to-stone-50 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
           <div className="space-y-2">
             <h1 className="text-3xl md:text-4xl font-bold text-text-primary">My Medications</h1>
             <p className="text-text-secondary text-lg">Track medications and their altitude impacts</p>
           </div>
-          <Button 
+          <Button
             onClick={() => setShowForm(!showForm)}
             className="mountain-gradient hover:opacity-90 transition-opacity shadow-lg"
           >
@@ -87,6 +88,8 @@ export default function MedicationsPage() {
             Add Medication
           </Button>
         </div>
+
+        {/* Removed inline disclaimer; Layout handles it conditionally */}
 
         {showForm && (
           <MedicationForm

@@ -1,35 +1,16 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Image as ImageIcon, FileText } from "lucide-react";
 import { summitCareMarkColor, summitCareMarkMonoDark, summitCareHorizontalColor } from "@/components/brand/LogoAssets";
+import { summitCareSidebarBadge, dashboardOverlaySquarePen } from "@/components/brand/LogoAssets";
 
-const variants = [
-  {
-    key: "horizontal-color",
-    title: "Logo — Horizontal (Color)",
-    svg: summitCareHorizontalColor,
-    suggestedName: "summitcare-logo-horizontal-color"
-  },
-  {
-    key: "mark-color",
-    title: "Logo Mark — Icon (Color)",
-    svg: summitCareMarkColor,
-    suggestedName: "summitcare-logo-mark-color"
-  },
-  {
-    key: "mark-mono-dark",
-    title: "Logo Mark — Icon (Monochrome Dark)",
-    svg: summitCareMarkMonoDark,
-    suggestedName: "summitcare-logo-mark-mono-dark"
-  }
-];
-
-function Preview({ svg }) {
+function Preview({ svg, bgClass }) {
   return (
     <div
-      className="w-full h-48 bg-white border border-stone-200 rounded-lg flex items-center justify-center overflow-hidden"
+      className={`w-full h-48 ${bgClass || "bg-white"} border border-stone-200 rounded-lg flex items-center justify-center overflow-hidden`}
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );
@@ -77,6 +58,42 @@ function downloadPNG(filename, svgString, width) {
   };
   img.src = url;
 }
+
+const variants = [
+  {
+    key: "horizontal-color",
+    title: "Logo — Horizontal (Color)",
+    svg: summitCareHorizontalColor,
+    suggestedName: "summitcare-logo-horizontal-color"
+  },
+  {
+    key: "mark-color",
+    title: "Logo Mark — Icon (Color)",
+    svg: summitCareMarkColor,
+    suggestedName: "summitcare-logo-mark-color"
+  },
+  {
+    key: "mark-mono-dark",
+    title: "Logo Mark — Icon (Monochrome Dark)",
+    svg: summitCareMarkMonoDark,
+    suggestedName: "summitcare-logo-mark-mono-dark"
+  },
+  // New: app badge used in sidebar / dashboard header area
+  {
+    key: "sidebar-badge",
+    title: "App Badge — Sidebar",
+    svg: summitCareSidebarBadge,
+    suggestedName: "summitcare-app-badge"
+  },
+  // New: Overlay icon (white strokes) with dark preview
+  {
+    key: "overlay-square-pen",
+    title: "Overlay Icon — Square Pen (White)",
+    svg: dashboardOverlaySquarePen,
+    suggestedName: "overlay-square-pen-white",
+    bgClass: "bg-slate-800"
+  }
+];
 
 export default function BrandAssets() {
   const [pngSize, setPngSize] = useState("1024");
@@ -126,7 +143,7 @@ export default function BrandAssets() {
                 <CardTitle className="text-base font-semibold text-text-primary">{v.title}</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
-                <Preview svg={v.svg} />
+                <Preview svg={v.svg} bgClass={v.bgClass} />
 
                 <div className="flex gap-3 flex-wrap">
                   <Button

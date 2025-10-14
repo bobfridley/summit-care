@@ -1,7 +1,10 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Shield, Mountain, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function RiskSummary({ medications }) {
   const getRiskCounts = () => {
@@ -122,7 +125,12 @@ export default function RiskSummary({ medications }) {
 
         {medications.length === 0 && (
           <div className="text-center text-text-secondary">
-            <p>Add medications to see risk assessment</p>
+            <Link 
+              to={createPageUrl("Medications")} 
+              className="text-primary-blue hover:text-secondary-blue font-medium"
+            >
+              Add medications to see risk assessment →
+            </Link>
           </div>
         )}
       </CardContent>

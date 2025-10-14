@@ -9,6 +9,7 @@ import { Search, Filter, AlertTriangle } from "lucide-react";
 import DatabaseSearch from "../components/database/DatabaseSearch";
 import MedicationCard from "../components/database/MedicationCard";
 import DatabaseFilters from "../components/database/DatabaseFilters";
+// import DemoDisclaimer from "../components/common/DemoDisclaimer"; // removed, shown from Layout
 
 export default function DatabasePage() {
   const [medications, setMedications] = useState([]);
@@ -67,13 +68,7 @@ export default function DatabasePage() {
           <p className="text-text-secondary text-lg">Explore altitude effects of common medications</p>
         </div>
         
-        <Alert variant="destructive" className="mb-6 bg-red-50">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle className="font-semibold">Demonstration Data</AlertTitle>
-          <AlertDescription>
-            This database contains sample data. Always consult a physician for accurate medical information.
-          </AlertDescription>
-        </Alert>
+        {/* Removed inline disclaimer; Layout handles it conditionally */}
 
         <DatabaseSearch 
           searchQuery={searchQuery}

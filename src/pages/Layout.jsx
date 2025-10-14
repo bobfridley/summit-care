@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Mountain, Pill, Database, FileText, Home, Bot as BotIcon, Image as ImageIcon } from "lucide-react";
+import { Mountain, Pill, Database, FileText, Home, Bot as BotIcon, Image as ImageIcon, AlertTriangle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import DemoDisclaimer from "@/components/common/DemoDisclaimer";
 
 const navigationItems = [
   {
@@ -66,6 +67,19 @@ const navigationItems = [
     url: createPageUrl("MySQLSchema"),
     icon: FileText,
   },
+  // Added: MySQL Sample Data page
+  {
+    title: "MySQL Sample Data",
+    url: createPageUrl("MySQLSampleData"),
+    icon: FileText,
+  },
+  // Add: Disclaimer link (red)
+  {
+    title: "Disclaimer",
+    url: createPageUrl("Disclaimer"),
+    icon: AlertTriangle,
+    variant: "danger"
+  },
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -86,6 +100,10 @@ export default function Layout({ children, currentPageName }) {
       }
     };
   }, []);
+
+  // Determine whether to show the full disclaimer at the top
+  const medicationPages = new Set(["Medications", "Database"]);
+  const showDisclaimer = medicationPages.has(currentPageName);
 
   return (
     <SidebarProvider>
@@ -151,21 +169,26 @@ export default function Layout({ children, currentPageName }) {
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navigationItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        asChild 
-                        className={`hover:bg-accent-green/20 hover:text-primary-green transition-all duration-300 rounded-xl mb-1 font-medium ${
-                          location.pathname === item.url ? 'bg-primary-green text-white shadow-sm font-semibold' : ''
-                        }`}
-                      >
-                        <Link to={item.url} className="flex items-center gap-3 px-3 py-3">
-                          <item.icon className="w-5 h-5" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {navigationItems.map((item) => {
+                    const isActive = location.pathname === item.url;
+                    const danger = item.variant === "danger";
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton 
+                          asChild 
+                          className={`transition-all duration-300 rounded-xl mb-1 font-medium
+                            ${danger ? 'hover:bg-red-50 hover:text-red-600 text-red-600' : 'hover:bg-accent-green/20 hover:text-primary-green'}
+                            ${isActive ? (danger ? 'bg-red-600 text-white shadow-sm font-semibold' : 'bg-primary-green text-white shadow-sm font-semibold') : ''}
+                          `}
+                        >
+                          <Link to={item.url} className="flex items-center gap-3 px-3 py-3">
+                            <item.icon className="w-5 h-5" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -174,9 +197,9 @@ export default function Layout({ children, currentPageName }) {
               <div className="alpine-card rounded-xl p-4 shadow-sm">
                 <div className="text-center">
                   <Mountain className="w-8 h-8 text-primary-blue mx-auto mb-2" />
-                  <h3 className="text-sm font-semibold text-text-primary mb-1">Stay Safe</h3>
+                  <h3 className="text-sm font-semibold text-text-primary mb-1">Your Journey Matters</h3>
                   <p className="text-xs text-text-secondary leading-relaxed font-medium">
-                    Always consult your physician before mountaineering with medications.
+                    Track your climbs and medications with SummitCare.
                   </p>
                 </div>
               </div>
@@ -193,6 +216,11 @@ export default function Layout({ children, currentPageName }) {
           </header>
 
           <div className="flex-1 overflow-auto">
+            {showDisclaimer && (
+              <div className="px-4 md:px-6 pt-4">
+                <DemoDisclaimer />
+              </div>
+            )}
             {children}
           </div>
         </main>

@@ -14,6 +14,8 @@ import RiskOverview from "../components/dashboard/RiskOverview";
 import RecentMedications from "../components/dashboard/RecentMedications";
 import AltitudeInsights from "../components/dashboard/AltitudeInsights";
 import UpcomingClimbs from "../components/dashboard/UpcomingClimbs";
+// Removed page-level disclaimer usage; handled centrally in Layout
+// import DemoDisclaimer from "../components/common/DemoDisclaimer"; // removed
 
 export default function Dashboard() {
   const [medications, setMedications] = useState([]);
@@ -81,15 +83,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Critical Safety Disclaimer */}
-        <Alert variant="destructive" className="mb-8 border-2 border-red-500/50 bg-red-50">
-          <AlertTriangle className="h-5 w-5" />
-          <AlertTitle className="font-bold text-lg">For Demonstration Purposes Only</AlertTitle>
-          <AlertDescription className="text-base">
-            The medication and risk information in this application is **not from a verified medical source.** It is for demonstration only and must not be used for making real-world medical decisions. **Always consult a qualified physician** before taking any medication or engaging in high-altitude activities.
-          </AlertDescription>
-        </Alert>
-        {/* End Critical Safety Disclaimer */}
+        {/* Removed inline disclaimer; now shown from Layout on medication pages only */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="alpine-card border-0 shadow-sm hover:shadow-md transition-shadow duration-300">
