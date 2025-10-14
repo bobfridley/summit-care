@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Mountain, ArrowLeft, Save, Wand2 } from "lucide-react";
 import GearEditor from "../components/climbs/GearEditor";
 import PackWeightSummary from "../components/climbs/PackWeightSummary";
-import { mysqlClimbs } from "@/api/functions";
+import { mysqlClimbs } from "@api/functions";
 
 export default function ClimbGear() {
   const urlParams = new URLSearchParams(window.location.search);

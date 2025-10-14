@@ -1,3 +1,4 @@
+import { env } from "../utils/env";
 import { withCORS } from "../utils/cors";
 import { sendJSON, handleError, HttpError } from "../utils/errors";
 import { getPool } from "../utils/mysql";
@@ -90,8 +91,18 @@ export default withCORS(async (req, res) => {
     const idParam = url.pathname.match(/\/api\/mysql-climbs\/(\d+)$/)?.[1];
 
     if (req.method === "GET") {
-      const authed = await tryRequireUser(req);
-      const effectiveClimberId = authed?.user_id ?? (url.searchParams.get("climber_id") ?? undefined);
+      const authed = env.ENFORCE_AUTH_ON_GET ? await requireUser(req) : await tryRequireUser(req);
+
+      const requestedClimberId = url.searchParams.get("climber_id") ?? undefined;
+      const effectiveClimberId =
+        authed?.isAdmin
+          ? (requestedClimberId ?? authed?.user_id)
+          : (authed?.user_id ?? (env.ENFORCE_AUTH_ON_GET ? undefined : requestedClimberId));
+
+      if (env.ENFORCE_AUTH_ON_GET && !effectiveClimberId) {
+        throw new HttpError(401, "Unauthorized");
+      }
+
       const limitParam = url.searchParams.get("limit");
       const limit = limitParam ? parseInt(limitParam, 10) : undefined;
 

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
-// Removed: import { Climb } from "@/api/entities";
-import { mysqlClimbs } from "@/api/functions";
+// Removed: import { Climb } from "@api/entities";
+import { mysqlClimbs } from "@api/functions";
 import { Button } from "@/components/ui/button";
 import { Plus, Mountain, Wand2 } from "lucide-react";
 import { Link } from "react-router-dom";

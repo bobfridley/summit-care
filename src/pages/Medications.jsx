@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from "react";
-// import { Medication } from "@/api/entities"; // Replaced by mysqlMedications
+// import { Medication } from "@api/entities"; // Replaced by mysqlMedications
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { mysqlMedications } from "@/api/functions"; // New import
+import { mysqlMedications } from "@api/functions"; // New import
 
 import MedicationForm from "../components/medications/MedicationForm";
 import MedicationList from "../components/medications/MedicationList";

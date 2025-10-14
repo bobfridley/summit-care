@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Send, Bot, User } from "lucide-react";
-import { openaiChat } from "@/api/functions";
-import { InvokeLLM } from "@/api/integrations";
+import { openaiChat } from "@api/functions";
+import { InvokeLLM } from "@api/integrations";
 
 export default function AIPlayground() {
   const [messages, setMessages] = useState([

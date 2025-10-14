@@ -3,7 +3,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "src/*": ["src/*"]
+      "@api/*": ["api/*"],
+      "@shared/*": ["shared/*"]
     }
-  }
+  },
+  "include": ["src", "api", "shared", "web/src"]
 }

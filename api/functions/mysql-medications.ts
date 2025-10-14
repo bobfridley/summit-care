@@ -1,3 +1,4 @@
+import { env } from "../utils/env";
 import { withCORS } from "../utils/cors";
 import { sendJSON, handleError, HttpError } from "../utils/errors";
 import { getPool } from "../utils/mysql";
@@ -103,13 +104,25 @@ export default withCORS(async (req, res) => {
     const idParam = url.pathname.match(/\/api\/mysql-medications\/(\d+)$/)?.[1];
 
     if (req.method === "GET") {
-      const authed = await tryRequireUser(req);
-      // If authed, always scope to the caller's own rows.
-      const effectiveUserId = authed?.user_id ?? (url.searchParams.get("user_id") ?? undefined);
+      // If ENFORCE_AUTH_ON_GET=true → must be logged in
+      // else try to scope to caller if they are logged in (admin may query any user_id)
+      const authed = env.ENFORCE_AUTH_ON_GET ? await requireUser(req) : await tryRequireUser(req);
+
+      const requestedUserId = url.searchParams.get("user_id") ?? undefined;
+      const effectiveUserId =
+        authed?.isAdmin
+          ? (requestedUserId ?? authed?.user_id)
+          : (authed?.user_id ?? (env.ENFORCE_AUTH_ON_GET ? undefined : requestedUserId));
+
+      // If auth is enforced but we somehow lack a user id, block
+      if (env.ENFORCE_AUTH_ON_GET && !effectiveUserId) {
+        throw new HttpError(401, "Unauthorized");
+      }
 
       const q = url.searchParams.get("q") ?? undefined;
       const limit = url.searchParams.get("limit");
       const offset = url.searchParams.get("offset");
+
       const rows = await listMedications({
         user_id: effectiveUserId,
         q,

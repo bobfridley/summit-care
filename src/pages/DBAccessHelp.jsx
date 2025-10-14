@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Copy, Check, Database, Shield, Globe } from "lucide-react";
-import { egressIp } from "@/api/functions";
-import { db } from "@/api/functions";
+import { egressIp } from "@api/functions";
+import { db } from "@api/functions";
 
 export default function DBAccessHelp() {
   const [ip, setIp] = useState("");

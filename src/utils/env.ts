@@ -1,4 +1,5 @@
 export const env = {
+  ENFORCE_AUTH_ON_GET: (process.env.ENFORCE_AUTH_ON_GET ?? "false").toLowerCase() === "true",
   OPENAI_API_KEY: process.env.OPENAI_API_KEY ?? "",
   OPENFDA_BASE: process.env.OPENFDA_BASE ?? "https://api.fda.gov",
   NODE_ENV: process.env.NODE_ENV ?? "development",

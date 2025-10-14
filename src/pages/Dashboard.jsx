@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { mysqlMedications } from "@/api/functions";
-import { mysqlClimbs } from "@/api/functions";
+import { mysqlMedications } from "@api/functions";
+import { mysqlClimbs } from "@api/functions";
 
 import RiskOverview from "../components/dashboard/RiskOverview";
 import RecentMedications from "../components/dashboard/RecentMedications";

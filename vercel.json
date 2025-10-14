@@ -42,6 +42,8 @@
     { "src": "/api/ae-trends",         "dest": "api/functions/ae-trends.ts" },
     { "src": "/api/db",                "dest": "api/functions/db.ts" },
     { "src": "/api/mysql-climbs",      "dest": "api/functions/mysql-climbs.ts" },
+    { "src": "/api/auth/me",           "dest": "api/functions/auth-me.ts" },
+    { "src": "/api/auth/signout",      "dest": "api/functions/auth-signout.ts" }
 
     /* -------- Static assets from web/dist (if they exist) -------- */
     { "handle": "filesystem" },
