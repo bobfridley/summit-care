@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true
+  },
+  "include": ["api/**/*.{ts,js}", "scripts/**/*.{ts,js}"]
+}

@@ -1,13 +1,18 @@
 {
-  "name": "summitcare-app",
+  "name": "summitcare",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "preview": "vite preview",
+    "typecheck:frontend": "tsc -p tsconfig.json --noEmit",
+    "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
+    "typecheck": "npm run typecheck:frontend && npm run typecheck:server",
+    "prepare": "husky install",
+    "test": "echo \"(optional) add tests here\" && exit 0"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",
@@ -47,7 +52,7 @@
     "lucide-react": "^0.475.0",
     "mysql2": "^3.15.2",
     "next-themes": "^0.4.4",
-    "react": "^18.2.0",
+    "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.54.2",
@@ -58,7 +63,14 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "@base44/sdk": "0.7.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.27.0",
+    "lucide-react": "^0.438.0",
+    "mysql2": "^3.9.7",
+    "tailwindcss": "^3.4.13",
+    "vite": "^5.3.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
@@ -72,8 +84,11 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.4",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "vite": "^6.1.0"
+    "vite": "^6.1.0",
+    "typescript": "^5.6.3"
   }
 }
