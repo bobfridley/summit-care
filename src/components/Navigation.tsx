@@ -37,6 +37,13 @@ const NAV_ITEMS = [
   { label: "Disclaimer",    path: "/disclaimer",    icon: ShieldAlert,  preload: () => import("@/pages/Disclaimer") },
 ];
 
+function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-md bg-stone-200 dark:bg-stone-700 ${className}`} />;
+}
+function SkeletonCircle({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-full bg-stone-200 dark:bg-stone-700 ${className}`} />;
+}
+
 // Helper: role check
 function hasAdminRole(roles?: string[] | null) {
   const r = (roles ?? []).map(x => String(x).toLowerCase());
@@ -70,8 +77,8 @@ function ActiveLink({
         classNames(
           "inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
           isActive
-            ? "bg-stone-100 text-stone-900 dark:bg-stone-800/60 dark:text-white"
-            : "text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-800/60"
+            ? "bg-stone-100 text-stone-900 dark:bg-stone-800/70 dark:text-white"
+            : "text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-800/50 dark:hover:text-stone-50"
         )
       }
     >
@@ -85,15 +92,88 @@ export default function Navigation() {
   const [open, setOpen] = React.useState(false);
   const location = useLocation();
 
-  const { user, status, signOut } = useAuth();  // <-- add signOut here
+  const { user, status, signOut } = useAuth();
   const isAdmin = hasAdminRole(user?.roles);
 
+  // Close mobile drawer on route change
   React.useEffect(() => { setOpen(false); }, [location.pathname]);
 
   return (
     <>
-      {/* Top bar stays the same */}
-      <header /* ... */> ... </header>
+      {/* Top Bar */}
+      <header
+        className="sticky top-0 z-40 border-b border-stone-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-stone-800 dark:bg-stone-950/70"
+        style={{ "--brand": COLORS.brandGreen } as React.CSSProperties}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          {/* Left: Brand + Mobile Menu */}
+          <div className="flex items-center gap-3">
+            <button
+              className="mr-1 rounded-lg p-2 text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-400 md:hidden dark:text-stone-300 dark:hover:bg-stone-800"
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-controls="mobile-drawer"
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+            >
+              {open ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
+            </button>
+
+            <NavLink to="/" className="flex items-center gap-2">
+              <Mountain className="h-6 w-6" style={{ color: COLORS.brandGreen }} />
+              <span className="text-base font-semibold tracking-tight text-stone-900 dark:text-stone-100">
+                SummitCare
+              </span>
+              {status === "loading" || status === "idle" ? (
+                <Skeleton className="ml-2 h-4 w-10 rounded-md" />
+              ) : isAdmin ? (
+                <span className="ml-2 rounded-md bg-emerald-100/90 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                  Admin
+                </span>
+              ) : null}
+            </NavLink>
+
+          </div>
+
+          {/* Right: Desktop Nav + Theme + User */}
+          <div className="flex items-center gap-2">
+            {/* Desktop nav is static; show it regardless so layout is stable */}
+            <nav className="hidden md:flex md:flex-wrap md:items-center md:gap-1">
+              {NAV_ITEMS.map((item) => (
+                <ActiveLink
+                  key={item.path}
+                  to={item.path}
+                  label={item.label}
+                  Icon={item.icon}
+                  onPreload={item.preload}
+                />
+              ))}
+              {isAdmin && (
+                <ActiveLink
+                  to="/admin"
+                  label="Admin"
+                  Icon={ShieldAlert}
+                  onPreload={() => import("@/pages/admin/Admin")}
+                />
+              )}
+            </nav>
+
+            {/* Right side: Theme + User (skeleton while auth loads) */}
+            {status === "loading" || status === "idle" ? (
+              <div className="flex items-center gap-2">
+                {/* ThemeToggle placeholder */}
+                <SkeletonCircle className="h-9 w-9" />
+                {/* Avatar/UserMenu placeholder (same footprint) */}
+                <SkeletonCircle className="h-9 w-9" />
+              </div>
+            ) : (
+              <>
+                <ThemeToggle />
+                <UserMenu />
+              </>
+            )}
+          </div>
+        </div>
+      </header>
 
       {/* Mobile Drawer & Overlay */}
       <div
@@ -150,17 +230,30 @@ export default function Navigation() {
           </div>
 
           {/* 👤 Mobile User Section */}
+          {(status === "loading" || status === "idle") && (
+            <div className="flex items-center gap-3 border-b border-stone-200 px-4 py-3 dark:border-stone-800">
+              <SkeletonCircle className="h-9 w-9" />
+              <div className="flex flex-col gap-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+          )}
           {status === "authed" && user && (
             <div className="flex items-center gap-3 border-b border-stone-200 px-4 py-3 dark:border-stone-800">
               {user.image ? (
-                <img src={user.image} alt={user.name ?? "User"} className="h-9 w-9 rounded-full object-cover" />
+                <img
+                  src={user.image}
+                  alt={user.name ?? "User"}
+                  className="h-9 w-9 rounded-full object-cover ring-1 ring-stone-200 dark:ring-stone-700"
+                />
               ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-200 text-sm font-semibold text-stone-700 dark:bg-stone-800 dark:text-stone-100">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-200 text-sm font-semibold text-stone-700 ring-1 ring-stone-300 dark:bg-stone-800 dark:text-stone-100 dark:ring-stone-700">
                   {(user.name || user.email || "U").slice(0, 2).toUpperCase()}
                 </div>
               )}
               <div className="flex flex-col">
-                <span className="text-sm font-medium text-stone-900 dark:text-stone-100 truncate max-w-[8rem]">
+                <span className="max-w-[8rem] truncate text-sm font-medium text-stone-900 dark:text-stone-100">
                   {user.name || user.email}
                 </span>
                 <button
@@ -196,12 +289,6 @@ export default function Navigation() {
             )}
           </nav>
 
-         {/* 🌗 Theme toggle */}
-          <ThemeToggle />
-
-          {/* 👤 User menu */}
-          <UserMenu />
-
           {/* Footer */}
           <div className="mt-auto border-t border-stone-200 p-3 text-xs text-stone-500 dark:border-stone-800">
             <div className="flex items-center gap-2">
@@ -214,4 +301,3 @@ export default function Navigation() {
     </>
   );
 }
-
