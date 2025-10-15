@@ -152,7 +152,7 @@ export default function Navigation() {
                   to="/admin"
                   label="Admin"
                   Icon={ShieldAlert}
-                  onPreload={() => import("@/pages/admin/Admin")}
+                  onPreload={() => import("@/pages/Admin")}
                 />
               )}
             </nav>
@@ -283,7 +283,7 @@ export default function Navigation() {
                 to="/admin"
                 label="Admin"
                 Icon={ShieldAlert}
-                onPreload={() => import("@/pages/admin/Admin")}
+                onPreload={() => import("@/pages/Admin")}
                 onNavigate={() => setOpen(false)}
               />
             )}

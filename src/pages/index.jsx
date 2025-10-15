@@ -62,6 +62,7 @@ function PagesContent() {
                 <Route path="/MySQLSchema" element={<MySQLSchema />} />
                 <Route path="/MySQLSampleData" element={<MySQLSampleData />} />
                 <Route path="/Disclaimer" element={<Disclaimer />} />
+                <Route path="/admin" element={<Admin />} />
             </Routes>
         </Layout>
     );

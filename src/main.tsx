@@ -8,6 +8,7 @@ import "./index.css";
 
 // ⚡ Code-split: Disclaimer is loaded only when the route is visited
 const Disclaimer = lazy(() => import("@/pages/Disclaimer"));
+const Admin = lazy(() => import("@/pages/Admin"));
 
 function Fallback() {
   return (
