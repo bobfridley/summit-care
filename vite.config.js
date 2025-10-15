@@ -6,11 +6,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),      // frontend source
-      '@api': path.resolve(__dirname, 'api'),   // backend API
-      '@shared': path.resolve(__dirname, 'shared'), // ✅ new shared dir
+      '@': path.resolve(__dirname, 'src'),
+      '@shared': path.resolve(__dirname, 'shared'),
+      // ⛔ no '@api' here — keep server code out of client bundles
     },
   },
 })
-
-import { base44 } from "@api/base44Client";

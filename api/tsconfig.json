@@ -1,16 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
+    "target": "ES2020",
+    "module": "ESNext",
     "moduleResolution": "Bundler",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "strict": false,
     "skipLibCheck": true,
-    "strict": true,
-    "resolveJsonModule": true,
-    "outDir": "dist",
-    "types": ["node"]
+
+    "allowJs": true,
+    "checkJs": false,
+
+    "baseUrl": ".",
+    "paths": {
+      "@api/*": ["./*"],
+      "@shared/*": ["../shared/*"]
+    }
   },
-  "include": ["functions/**/*.ts", "utils/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["./**/*", "../shared/**/*"]
 }
