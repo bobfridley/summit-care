@@ -1,75 +1,158 @@
-import mysql, { Pool, PoolOptions } from "mysql2/promise";
-import { env } from "./env";
+// api/utils/mysql.ts
+//import mysql from 'npm:mysql2@3.9.7/promise';
+import mysql from 'mysql2/promise';
 
-let pool: Pool | undefined;
+export type DBPool = mysql.Pool;
 
-function buildPoolOptions(): PoolOptions {
-  const {
-    MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE,
-    MYSQL_SSL_CA, MYSQL_SSL_MODE, MYSQL_SSL_REJECT_UNAUTHORIZED, MYSQL_SSL_DISABLE,
-  } = env;
+let pool: DBPool | undefined;
 
-  if (!MYSQL_HOST || !MYSQL_USER || !MYSQL_PASSWORD || !MYSQL_DATABASE) {
-    throw new Error("Missing one or more required MySQL env vars: MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE");
-  }
+/* ───────────────────────────── env helpers ───────────────────────────── */
 
-  const common: PoolOptions = {
-    host: MYSQL_HOST,
-    port: MYSQL_PORT,
-    user: MYSQL_USER,
-    password: MYSQL_PASSWORD,
-    database: MYSQL_DATABASE,
-    waitForConnections: true,
-    connectionLimit: 5,
-    queueLimit: 0,
+function getEnv(key: string): string | undefined {
+  const g = globalThis as unknown as {
+    Deno?: { env?: { get?: (k: string) => string | undefined } };
+    process?: { env?: Record<string, string | undefined> };
   };
-
-  const rejectUnauthorized = MYSQL_SSL_REJECT_UNAUTHORIZED === "true";
-  const forceInsecure = MYSQL_SSL_MODE === "insecure" || MYSQL_SSL_MODE === "disable" || !rejectUnauthorized;
-
-  if (MYSQL_SSL_DISABLE || MYSQL_SSL_MODE === "disable") {
-    return { ...common }; // plain (no SSL)
-  }
-
-  if (forceInsecure) {
-    return { ...common, ssl: { rejectUnauthorized: false, minVersion: "TLSv1.2" } };
-  }
-
-  const ssl = MYSQL_SSL_CA
-    ? { rejectUnauthorized: true, ca: MYSQL_SSL_CA }
-    : { rejectUnauthorized: true, minVersion: "TLSv1.2" };
-
-  return { ...common, ssl };
+  const fromDeno = g.Deno?.env?.get?.(key);
+  if (fromDeno != null) return fromDeno;
+  return g.process?.env?.[key];
 }
 
-export async function getPool(): Promise<Pool> {
+function boolEnv(key: string, fallback = false): boolean {
+  const v = (getEnv(key) ?? '').toLowerCase().trim();
+  if (!v) return fallback;
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
+function intEnv(key: string, fallback: number): number {
+  const n = Number(getEnv(key));
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/* ─────────────────────── configuration & singleton ───────────────────── */
+
+/**
+ * Create (or return) the shared MySQL connection pool.
+ * Reads:
+ *   - MYSQL_HOST (required)
+ *   - MYSQL_PORT (default 3306)
+ *   - MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE (required)
+ *   - MYSQL_SSL_DISABLE ("true" to disable all TLS)
+ *   - MYSQL_SSL_MODE ("secure" | "insecure" | "disable") default: "insecure"
+ *   - MYSQL_SSL_CA (PEM string)
+ *   - MYSQL_SSL_REJECT_UNAUTHORIZED ("true" | "false") default: "false"
+ */
+export async function getPool(): Promise<DBPool> {
   if (pool) return pool;
-  const opts = buildPoolOptions();
-  const newPool = mysql.createPool(opts);
-  const conn = await newPool.getConnection();
+
+  const host = getEnv('MYSQL_HOST');
+  const port = intEnv('MYSQL_PORT', 3306);
+  const user = getEnv('MYSQL_USER');
+  const password = getEnv('MYSQL_PASSWORD');
+  const database = getEnv('MYSQL_DATABASE');
+
+  if (!host || !user || !password || !database) {
+    throw new Error(
+      'Missing one or more MySQL env vars: MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE'
+    );
+  }
+
+  const sslMode = (getEnv('MYSQL_SSL_MODE') || 'insecure').toLowerCase();
+  const ca = getEnv('MYSQL_SSL_CA');
+  const disableSsl = boolEnv('MYSQL_SSL_DISABLE', false);
+  const rejectUnauthorizedEnv = (getEnv('MYSQL_SSL_REJECT_UNAUTHORIZED') || 'false')
+    .toLowerCase()
+    .trim();
+
+  // If explicitly disabled, create a plain, non-SSL pool.
+  if (disableSsl || sslMode === 'disable') {
+    pool = mysql.createPool({
+      host,
+      port,
+      user,
+      password,
+      database,
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+    });
+    // quick smoke test to fail fast on bad creds/host
+    const c = await pool.getConnection();
+    try {
+      await c.ping();
+    } finally {
+      c.release();
+    }
+    return pool;
+  }
+
+  // Decide between "secure" and "insecure" TLS
+  const forceInsecure = sslMode === 'insecure' || rejectUnauthorizedEnv === 'false';
+
+  if (forceInsecure) {
+    // TLS with certificate validation disabled
+    pool = mysql.createPool({
+      host,
+      port,
+      user,
+      password,
+      database,
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+      ssl: { rejectUnauthorized: false, minVersion: 'TLSv1.2' },
+    });
+  } else {
+    // Strict TLS — either use provided CA or rely on platform store
+    const ssl =
+      ca && ca.trim().length
+        ? { rejectUnauthorized: true, ca }
+        : { rejectUnauthorized: true, minVersion: 'TLSv1.2' };
+
+    pool = mysql.createPool({
+      host,
+      port,
+      user,
+      password,
+      database,
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0,
+      ssl,
+    });
+  }
+
+  // quick smoke test
+  const conn = await pool.getConnection();
   try {
     await conn.ping();
   } finally {
     conn.release();
   }
-  pool = newPool;
+
   return pool;
 }
 
-export async function pingDb(): Promise<number> {
-  const p = await getPool();
-  const conn = await p.getConnection();
-  try {
-    await conn.ping();
-    return 1;
-  } finally {
-    conn.release();
-  }
-}
+/* ─────────────────────────── convenience utils ────────────────────────── */
 
-export async function tableCount(table: string): Promise<number> {
-  const p = await getPool();
-  const [rows] = await p.query(`SELECT COUNT(*) AS c FROM \`${table}\``);
-  const r = Array.isArray(rows) ? (rows[0] as any) : (rows as any);
-  return Number(r?.c ?? 0);
+/** Ping and simple SELECT 1 to verify the pool works */
+export async function ping(poolArg?: DBPool): Promise<{ ok: boolean; ms: number; error?: string }> {
+  const start = Date.now();
+  try {
+    const p = poolArg ?? (await getPool());
+    const c = await p.getConnection();
+    try {
+      await c.ping();
+      await c.query('SELECT 1');
+    } finally {
+      c.release();
+    }
+    return { ok: true, ms: Date.now() - start };
+  } catch (e) {
+    const msg =
+      typeof e === 'object' && e && 'message' in e
+        ? String((e as { message?: unknown }).message)
+        : String(e);
+    return { ok: false, ms: Date.now() - start, error: msg };
+  }
 }

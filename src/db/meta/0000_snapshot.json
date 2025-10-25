@@ -1,0 +1,1591 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "5",
+  "dialect": "mysql",
+  "tables": {
+    "ae_trends_cache": {
+      "name": "ae_trends_cache",
+      "columns": {
+        "drug": {
+          "autoincrement": false,
+          "name": "drug",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bucket_date": {
+          "autoincrement": false,
+          "name": "bucket_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "count_value": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "count_value",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {},
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "climb_gear_items": {
+      "name": "climb_gear_items",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "climb_id": {
+          "autoincrement": false,
+          "name": "climb_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_name": {
+          "autoincrement": false,
+          "name": "item_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "default": "'safety'",
+          "autoincrement": false,
+          "name": "category",
+          "type": "enum('safety','clothing','technical','camping','navigation','health','food_water','other')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "default": 1,
+          "autoincrement": false,
+          "name": "quantity",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "required": {
+          "default": 1,
+          "autoincrement": false,
+          "name": "required",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "packed": {
+          "default": 0,
+          "autoincrement": false,
+          "name": "packed",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "importance": {
+          "default": "'recommended'",
+          "autoincrement": false,
+          "name": "importance",
+          "type": "enum('critical','high','recommended','optional')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estimated_weight_kg": {
+          "autoincrement": false,
+          "name": "estimated_weight_kg",
+          "type": "decimal(6,2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "autoincrement": false,
+          "name": "notes",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "climb_gear_items_id": {
+          "name": "climb_gear_items_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_gear_climb": {
+          "name": "idx_gear_climb",
+          "columns": [
+            "climb_id"
+          ],
+          "isUnique": false
+        },
+        "idx_gear_cat": {
+          "name": "idx_gear_cat",
+          "columns": [
+            "category"
+          ],
+          "isUnique": false
+        },
+        "idx_gear_imp": {
+          "name": "idx_gear_imp",
+          "columns": [
+            "importance"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "fk_gear_climb": {
+          "name": "fk_gear_climb",
+          "tableFrom": "climb_gear_items",
+          "tableTo": "user_climbs",
+          "columnsFrom": [
+            "climb_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "climb_medications": {
+      "name": "climb_medications",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "climb_id": {
+          "autoincrement": false,
+          "name": "climb_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "medication_id": {
+          "autoincrement": false,
+          "name": "medication_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usage_notes": {
+          "autoincrement": false,
+          "name": "usage_notes",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_offset_days": {
+          "autoincrement": false,
+          "name": "start_offset_days",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_offset_days": {
+          "autoincrement": false,
+          "name": "end_offset_days",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "climb_medications_id": {
+          "name": "climb_medications_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fk_cm_climb": {
+          "name": "fk_cm_climb",
+          "tableFrom": "climb_medications",
+          "tableTo": "user_climbs",
+          "columnsFrom": [
+            "climb_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "fk_cm_med": {
+          "name": "fk_cm_med",
+          "tableFrom": "climb_medications",
+          "tableTo": "user_medications",
+          "columnsFrom": [
+            "medication_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {
+        "uq_climb_med": {
+          "name": "uq_climb_med",
+          "columns": [
+            "climb_id",
+            "medication_id"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "contraindications": {
+      "name": "contraindications",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "drug": {
+          "autoincrement": false,
+          "name": "drug",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contraindication": {
+          "autoincrement": false,
+          "name": "contraindication",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "default": "'major'",
+          "autoincrement": false,
+          "name": "level",
+          "type": "varchar(24)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "autoincrement": false,
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "contraindications_id": {
+          "name": "contraindications_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "gear_catalog": {
+      "name": "gear_catalog",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_name": {
+          "autoincrement": false,
+          "name": "item_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "autoincrement": false,
+          "name": "category",
+          "type": "enum('safety','clothing','technical','camping','navigation','health','food_water','other')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "default_importance": {
+          "default": "'recommended'",
+          "autoincrement": false,
+          "name": "default_importance",
+          "type": "enum('critical','high','recommended','optional')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "default_weight_kg": {
+          "autoincrement": false,
+          "name": "default_weight_kg",
+          "type": "decimal(6,2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "autoincrement": false,
+          "name": "notes",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "gear_catalog_id": {
+          "name": "gear_catalog_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_gear_cat": {
+          "name": "idx_gear_cat",
+          "columns": [
+            "category"
+          ],
+          "isUnique": false
+        },
+        "ft_gear": {
+          "name": "ft_gear",
+          "columns": [
+            "item_name",
+            "notes"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "uniqueConstraints": {
+        "uq_gear_item": {
+          "name": "uq_gear_item",
+          "columns": [
+            "item_name"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "gear_preset_items": {
+      "name": "gear_preset_items",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gear_preset_id": {
+          "autoincrement": false,
+          "name": "gear_preset_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gear_catalog_id": {
+          "autoincrement": false,
+          "name": "gear_catalog_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "item_name": {
+          "autoincrement": false,
+          "name": "item_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "autoincrement": false,
+          "name": "category",
+          "type": "enum('safety','clothing','technical','camping','navigation','health','food_water','other')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "default": 1,
+          "autoincrement": false,
+          "name": "quantity",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "importance": {
+          "default": "'recommended'",
+          "autoincrement": false,
+          "name": "importance",
+          "type": "enum('critical','high','recommended','optional')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estimated_weight_kg": {
+          "autoincrement": false,
+          "name": "estimated_weight_kg",
+          "type": "decimal(6,2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "autoincrement": false,
+          "name": "notes",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "gear_preset_items_id": {
+          "name": "gear_preset_items_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_gpi_preset": {
+          "name": "idx_gpi_preset",
+          "columns": [
+            "gear_preset_id"
+          ],
+          "isUnique": false
+        },
+        "idx_gpi_cat": {
+          "name": "idx_gpi_cat",
+          "columns": [
+            "category"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "fk_gpi_catalog": {
+          "name": "fk_gpi_catalog",
+          "tableFrom": "gear_preset_items",
+          "tableTo": "gear_catalog",
+          "columnsFrom": [
+            "gear_catalog_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "fk_gpi_preset": {
+          "name": "fk_gpi_preset",
+          "tableFrom": "gear_preset_items",
+          "tableTo": "gear_presets",
+          "columnsFrom": [
+            "gear_preset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "gear_presets": {
+      "name": "gear_presets",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "autoincrement": false,
+          "name": "name",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "autoincrement": false,
+          "name": "description",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "default": "'general'",
+          "autoincrement": false,
+          "name": "scope",
+          "type": "enum('general','style','elevation','season')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "style": {
+          "autoincrement": false,
+          "name": "style",
+          "type": "enum('day_hike','overnight','multi_day','expedition','technical_climb')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_elevation": {
+          "autoincrement": false,
+          "name": "min_elevation",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_elevation": {
+          "autoincrement": false,
+          "name": "max_elevation",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "min_duration_days": {
+          "autoincrement": false,
+          "name": "min_duration_days",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "season": {
+          "default": "'any'",
+          "autoincrement": false,
+          "name": "season",
+          "type": "enum('any','winter','summer','shoulder')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active": {
+          "default": 1,
+          "autoincrement": false,
+          "name": "active",
+          "type": "tinyint(1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "gear_presets_id": {
+          "name": "gear_presets_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {
+        "uq_preset_name": {
+          "name": "uq_preset_name",
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "medication_altitude_effects": {
+      "name": "medication_altitude_effects",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "medication_database_id": {
+          "autoincrement": false,
+          "name": "medication_database_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effect_text": {
+          "autoincrement": false,
+          "name": "effect_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "medication_altitude_effects_id": {
+          "name": "medication_altitude_effects_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_mae_med": {
+          "name": "idx_mae_med",
+          "columns": [
+            "medication_database_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "fk_mae_meddb": {
+          "name": "fk_mae_meddb",
+          "tableFrom": "medication_altitude_effects",
+          "tableTo": "medication_database",
+          "columnsFrom": [
+            "medication_database_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "medication_database": {
+      "name": "medication_database",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "autoincrement": false,
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "generic_name": {
+          "autoincrement": false,
+          "name": "generic_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "autoincrement": false,
+          "name": "category",
+          "type": "enum('cardiovascular','respiratory','neurological','gastrointestinal','endocrine','psychiatric','analgesic','antibiotic','other')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "risk_level": {
+          "autoincrement": false,
+          "name": "risk_level",
+          "type": "enum('low','moderate','high','severe')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recommendations": {
+          "autoincrement": false,
+          "name": "recommendations",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "medication_database_id": {
+          "name": "medication_database_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_meddb_category": {
+          "name": "idx_meddb_category",
+          "columns": [
+            "category"
+          ],
+          "isUnique": false
+        },
+        "idx_meddb_risk": {
+          "name": "idx_meddb_risk",
+          "columns": [
+            "risk_level"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "uniqueConstraints": {
+        "uq_meddb_name": {
+          "name": "uq_meddb_name",
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
+    "medication_warnings": {
+      "name": "medication_warnings",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "medication_database_id": {
+          "autoincrement": false,
+          "name": "medication_database_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "warning_text": {
+          "autoincrement": false,
+          "name": "warning_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "medication_warnings_id": {
+          "name": "medication_warnings_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_mw_med": {
+          "name": "idx_mw_med",
+          "columns": [
+            "medication_database_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "fk_mw_meddb": {
+          "name": "fk_mw_meddb",
+          "tableFrom": "medication_warnings",
+          "tableTo": "medication_database",
+          "columnsFrom": [
+            "medication_database_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "user_climb_status_history": {
+      "name": "user_climb_status_history",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "climb_id": {
+          "autoincrement": false,
+          "name": "climb_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "old_status": {
+          "autoincrement": false,
+          "name": "old_status",
+          "type": "enum('planning','confirmed','in_progress','completed','cancelled')",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "new_status": {
+          "autoincrement": false,
+          "name": "new_status",
+          "type": "enum('planning','confirmed','in_progress','completed','cancelled')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "changed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_by_email": {
+          "autoincrement": false,
+          "name": "changed_by_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_climb_status_history_id": {
+          "name": "user_climb_status_history_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_csh_climb": {
+          "name": "idx_csh_climb",
+          "columns": [
+            "climb_id"
+          ],
+          "isUnique": false
+        },
+        "idx_csh_time": {
+          "name": "idx_csh_time",
+          "columns": [
+            "changed_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "fk_csh_climb": {
+          "name": "fk_csh_climb",
+          "tableFrom": "user_climb_status_history",
+          "tableTo": "user_climbs",
+          "columnsFrom": [
+            "climb_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "user_climbs": {
+      "name": "user_climbs",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_email": {
+          "autoincrement": false,
+          "name": "created_by_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mountain_name": {
+          "autoincrement": false,
+          "name": "mountain_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "elevation": {
+          "autoincrement": false,
+          "name": "elevation",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "location": {
+          "autoincrement": false,
+          "name": "location",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "planned_start_date": {
+          "autoincrement": false,
+          "name": "planned_start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_days": {
+          "autoincrement": false,
+          "name": "duration_days",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "difficulty_level": {
+          "default": "'intermediate'",
+          "autoincrement": false,
+          "name": "difficulty_level",
+          "type": "enum('beginner','intermediate','advanced','expert','extreme')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "climbing_style": {
+          "default": "'day_hike'",
+          "autoincrement": false,
+          "name": "climbing_style",
+          "type": "enum('day_hike','overnight','multi_day','expedition','technical_climb')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "group_size": {
+          "autoincrement": false,
+          "name": "group_size",
+          "type": "int unsigned",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "emergency_contact": {
+          "autoincrement": false,
+          "name": "emergency_contact",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weather_concerns": {
+          "autoincrement": false,
+          "name": "weather_concerns",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "special_equipment": {
+          "autoincrement": false,
+          "name": "special_equipment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "backpack_name": {
+          "autoincrement": false,
+          "name": "backpack_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "base_pack_weight_kg": {
+          "autoincrement": false,
+          "name": "base_pack_weight_kg",
+          "type": "decimal(6,2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "default": "'planning'",
+          "autoincrement": false,
+          "name": "status",
+          "type": "enum('planning','confirmed','in_progress','completed','cancelled')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "autoincrement": false,
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_climbs_id": {
+          "name": "user_climbs_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_climbs_user": {
+          "name": "idx_climbs_user",
+          "columns": [
+            "created_by_email"
+          ],
+          "isUnique": false
+        },
+        "idx_climbs_start": {
+          "name": "idx_climbs_start",
+          "columns": [
+            "planned_start_date"
+          ],
+          "isUnique": false
+        },
+        "idx_climbs_status": {
+          "name": "idx_climbs_status",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "idx_climbs_elev": {
+          "name": "idx_climbs_elev",
+          "columns": [
+            "elevation"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "user_medications": {
+      "name": "user_medications",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_email": {
+          "autoincrement": false,
+          "name": "created_by_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "autoincrement": false,
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dosage": {
+          "autoincrement": false,
+          "name": "dosage",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "indication": {
+          "autoincrement": false,
+          "name": "indication",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_date": {
+          "autoincrement": false,
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "autoincrement": false,
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "altitude_risk_level": {
+          "autoincrement": false,
+          "name": "altitude_risk_level",
+          "type": "enum('low','moderate','high','severe')",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "medication_database_id": {
+          "autoincrement": false,
+          "name": "medication_database_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "onUpdate": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_medications_id": {
+          "name": "user_medications_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_med_created_by": {
+          "name": "idx_med_created_by",
+          "columns": [
+            "created_by_email"
+          ],
+          "isUnique": false
+        },
+        "idx_med_start_date": {
+          "name": "idx_med_start_date",
+          "columns": [
+            "start_date"
+          ],
+          "isUnique": false
+        },
+        "idx_med_risk": {
+          "name": "idx_med_risk",
+          "columns": [
+            "altitude_risk_level"
+          ],
+          "isUnique": false
+        },
+        "idx_med_dbid": {
+          "name": "idx_med_dbid",
+          "columns": [
+            "medication_database_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "fk_med_refdb": {
+          "name": "fk_med_refdb",
+          "tableFrom": "user_medications",
+          "tableTo": "medication_database",
+          "columnsFrom": [
+            "medication_database_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "user_trip_reports": {
+      "name": "user_trip_reports",
+      "columns": {
+        "id": {
+          "autoincrement": true,
+          "name": "id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_email": {
+          "autoincrement": false,
+          "name": "created_by_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "climb_id": {
+          "autoincrement": false,
+          "name": "climb_id",
+          "type": "bigint unsigned",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "autoincrement": false,
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "report_json": {
+          "autoincrement": false,
+          "name": "report_json",
+          "type": "longtext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "generated_at": {
+          "default": "(CURRENT_TIMESTAMP)",
+          "autoincrement": false,
+          "name": "generated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_trip_reports_id": {
+          "name": "user_trip_reports_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "indexes": {
+        "idx_tr_user": {
+          "name": "idx_tr_user",
+          "columns": [
+            "created_by_email"
+          ],
+          "isUnique": false
+        },
+        "idx_tr_climb": {
+          "name": "idx_tr_climb",
+          "columns": [
+            "climb_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "fk_tr_climb": {
+          "name": "fk_tr_climb",
+          "tableFrom": "user_trip_reports",
+          "tableTo": "user_climbs",
+          "columnsFrom": [
+            "climb_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    }
+  },
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {
+      "ae_trends_cache": {
+        "columns": {
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "climb_gear_items": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          },
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "climb_medications": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "contraindications": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          },
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "gear_catalog": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          },
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "gear_preset_items": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          },
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "gear_presets": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          },
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "medication_altitude_effects": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "medication_database": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          },
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "medication_warnings": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "user_climb_status_history": {
+        "columns": {
+          "changed_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "user_climbs": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          },
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "user_medications": {
+        "columns": {
+          "created_at": {
+            "isDefaultAnExpression": true
+          },
+          "updated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      },
+      "user_trip_reports": {
+        "columns": {
+          "generated_at": {
+            "isDefaultAnExpression": true
+          }
+        }
+      }
+    },
+    "indexes": {}
+  }
+}

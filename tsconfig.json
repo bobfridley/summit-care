@@ -1,15 +1,44 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    /* Frontend build target/resolution (Vite-friendly) */
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+
+    /* React + Vite */
     "jsx": "react-jsx",
+    "types": ["vite/client"],
+
+    /* Project ergonomics */
     "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "isolatedModules": true,
+
+    /* You have a lot of .jsx — keep allowed, but don’t type-check .js files */
     "allowJs": true,
     "checkJs": false,
+
+    /* Browser libs only (server libs live in tsconfig.server.json) */
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    /* Path aliases for the app */
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@shared/*": ["shared/*"]
-    }
+      "@shared/*": ["shared/*"],
+      "@api/*": ["src/client-stubs/api/*"]
+    },
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler"
   },
-  "include": ["src", "shared", "vite.config.*"]
+  "include": ["src", "shared", "scripts", "drizzle", "utils", "web", "vite.config.*", "types"],
+  "exclude": [
+    "api", // keep server code out of the frontend config
+    "backend",
+    "node_modules",
+    "dist",
+    ".vercel"
+  ]
 }

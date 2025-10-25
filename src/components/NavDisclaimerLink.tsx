@@ -1,11 +1,12 @@
+// @ts-nocheck
 // src/components/NavDisclaimerLink.tsx
-import React from "react";
-import { Link } from "react-router-dom";
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function NavDisclaimerLink() {
   const preload = () => {
-    // kick off the dynamic import early (same path as in main.tsx)
-    import("@/pages/Disclaimer");
+    // Fire-and-forget dynamic import to warm the chunk
+    void import('@/pages/Disclaimer');
   };
 
   return (

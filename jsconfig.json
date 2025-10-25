@@ -4,8 +4,9 @@
     "allowJs": true,
     "paths": {
       "@/*": ["src/*"],
-      "@shared/*": ["shared/*"]
-    },
+      "@shared/*": ["shared/*"],
+      "@api/*": ["src/client-stubs/api/*"]
+    }
   },
   "include": ["src", "shared"]
 }

@@ -1,33 +1,88 @@
-import { withCORS } from "../utils/cors";
-import { sendJSON, handleError, HttpError } from "../utils/errors";
+export const runtime = 'edge';
+export const preferredRegion = ['iad1', 'sfo1'];
+// --- CORS header block (auto-added) ---
+const CORS_HEADERS: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+// --- end CORS block ---
 
-export default withCORS(async (req, res) => {
+import { traceId as makeTraceId } from '../base44Client';
+
+Deno.serve((req: Request) => {
+  const tid = makeTraceId();
+
+  // ✅ CORS preflight handled WITHIN the request scope
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: { ...CORS_HEADERS, 'X-Trace-Id': tid } });
+  }
+
   try {
-    if (req.method !== "GET") {
-      res.setHeader("Allow", "GET");
-      throw new HttpError(405, "Method Not Allowed");
+    // (optional) restrict allowed methods for this endpoint
+    // e.g., only POST for auth-me:
+    // if (req.method !== 'POST') {
+    //   return new Response('Method Not Allowed', {
+    //     status: 405,
+    //     headers: { ...CORS_HEADERS, Allow: 'POST', 'X-Trace-Id': tid },
+    //   });
+    // }
+
+    // Example of using the Base44 client safely
+    // import { getBase44Client } from '../base44Client';  // adjust relative path
+    // const b44 = getBase44Client(req);
+    // const me = await b44.auth.me();
+
+    // TODO: implement the endpoint logic...
+    const payload = { ok: true, traceId: tid }; // replace with real result
+
+    return new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: {
+        ...CORS_HEADERS,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-Trace-Id': tid,
+      },
+    });
+  } catch (e: unknown) {
+    // Centralized safe error string (import from your utils)
+    // import { errMsg } from '../utils/errors';
+    const msg = e instanceof Error ? e.message : typeof e === 'string' ? e : JSON.stringify(e);
+
+    // Log as a single string to avoid lint complaints
+    console.error(`endpoint error [${tid}]: ${msg}`);
+
+    return new Response(JSON.stringify({ status: 'error', error: msg, traceId: tid }), {
+      status: 500,
+      headers: {
+        ...CORS_HEADERS,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-Trace-Id': tid,
+      },
+    });
+  }
+});
+
+import { withCORS } from '../utils/cors';
+import { sendJSON, handleError, HttpError } from '../utils/errors';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
+
+export default withCORS(async (req) => {
+  try {
+    if (req.method !== 'GET') {
+      return sendJSON(405, { status: 'error', error: 'Method Not Allowed' }, { Allow: 'GET' });
     }
 
-    // Runtime import avoids bundling on cold starts if not needed
-    const mod = await import("@base44/sdk");
-    const { createClientFromRequest } = (mod as any);
+    const base44 = createClientFromRequest(req);
 
-    const b44 = createClientFromRequest(req);
-    const me = await b44.auth.me(); // throws if unauthenticated
+    // If not authenticated, Base44 throws — treat as 401
+    const user = await base44.auth.me().catch(() => null);
+    if (!user) throw new HttpError(401, 'Unauthenticated');
 
-    // Normalize a couple of useful fields (adjust if your shape differs)
-    const user = {
-      id: me?.user?.id ?? me?.id ?? null,
-      name: me?.user?.name ?? me?.name ?? null,
-      email: me?.user?.email ?? me?.email ?? null,
-      image: me?.user?.image ?? me?.image ?? null,
-      roles: (me?.user?.roles ?? me?.roles) ?? [],
-    };
-
-    sendJSON(res, 200, { ok: true, user });
-  } catch (err: any) {
-    // Treat “not authed” as 401
-    const status = err?.status ?? err?.response?.status ?? 401;
-    sendJSON(res, status, { ok: false, error: "unauthorized" });
+    return sendJSON(200, { status: 'ok', user });
+  } catch (err) {
+    return handleError(err);
   }
 });

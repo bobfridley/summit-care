@@ -1,10 +1,12 @@
-import AETrendsModule, { DrugCardsView, CompareTrends } from "@/web/components/AETrendsModule";
+/**
+ * Usage examples for AETrends:
+ *
+ * Detailed page:
+ *   <AETrendsModule />
+ *
+ * Homepage:
+ *   <DrugCardsView />
+ */
 
-// Detailed page:
-<AETrendsModule />
-
-// Homepage:
-<DrugCardsView />
-
-// Comparison:
-<CompareTrends />
+// This file only documents usage; it doesn't render anything.
+export {};

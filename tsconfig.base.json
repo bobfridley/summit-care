@@ -1,10 +1,19 @@
-{
+/*{
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true
   }
+}*/
+
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/shared/*": ["shared/*"]
+    }
+  },
+  "include": ["src", "shared", "scripts", "drizzle", "utils", "web", "vite.config.*", "types", "types/**/*.d.ts"]
 }

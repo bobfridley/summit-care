@@ -1,198 +1,91 @@
-// Cache-first adverse-event trends (openFDA drug/event) for multiple drugs.
-// Tables used: ae_trends_cache
-// Secrets required: OPENFDA_API_KEY
+// backend/getAeTrendsCached.ts
+import type { Pool, RowDataPacket } from 'mysql2/promise';
 
-const DRUGS_DEFAULT = ["PHENELZINE", "ATORVASTATIN", "OMEPRAZOLE"] as const;
-const TTL_MS_DEFAULT = 24 * 60 * 60 * 1000; // 24h
-const DATE_START_DEFAULT = "20240101";       // per your update
-const DATE_END_DEFAULT = (() => {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}${m}${d}`; // YYYYMMDD
-})();
-
-export default async function getAeTrendsCached({
-  drugs = DRUGS_DEFAULT as string[],
-  start_date = DATE_START_DEFAULT,
-  end_date = DATE_END_DEFAULT,
-  country = "US",
-  serious = "1",
-  top_n = 20,
-  ttl_ms = TTL_MS_DEFAULT
-}: {
-  drugs?: string[];
-  start_date?: string;
-  end_date?: string;
-  country?: string | null;
-  serious?: "0" | "1" | null;
-  top_n?: number;
-  ttl_ms?: number;
-}) {
-  const nowMs = Date.now();
-
-  // 1) Build IDs and read cache
-  const ids = drugs.map(d => makeId(d, start_date, end_date, country, serious, top_n));
-  const cached = await db.select("ae_trends_cache", { id__in: ids });
-  const byId: Record<string, any> = Object.fromEntries(cached.map((r: any) => [r.id, r]));
-
-  // 2) Choose what to fetch
-  const needsFetch: string[] = [];
-  const out: Array<{ source: "cache" | "fresh" | "empty"; row: any }> = [];
-
-  for (const drug of drugs) {
-    const id = makeId(drug, start_date, end_date, country, serious, top_n);
-    const row = byId[id];
-    if (!row) {
-      needsFetch.push(drug);
-    } else {
-      const age = nowMs - new Date(row.fetched_at).getTime();
-      if (Number.isFinite(age) && age <= ttl_ms) {
-        out.push({ source: "cache", row });
-      } else {
-        needsFetch.push(drug);
-      }
-    }
-  }
-
-  // 3) Fetch fresh where needed
-  if (needsFetch.length) {
-    const fetched = await fetchAndUpsertAeTrends({
-      drugs: needsFetch,
-      start_date,
-      end_date,
-      country,
-      serious,
-      top_n
-    });
-    const fetchedById = Object.fromEntries((fetched.rows || []).map((r: any) => [r.id, r]));
-    for (const drug of drugs) {
-      const id = makeId(drug, start_date, end_date, country, serious, top_n);
-      if (fetchedById[id]) out.push({ source: "fresh", row: fetchedById[id] });
-    }
-  }
-
-  // 4) Fill gaps
-  const have = new Set(out.map(r => r.row.id));
-  for (const drug of drugs) {
-    const id = makeId(drug, start_date, end_date, country, serious, top_n);
-    if (!have.has(id)) {
-      if (byId[id]) {
-        out.push({ source: "cache", row: byId[id] });
-      } else {
-        out.push({
-          source: "empty",
-          row: {
-            id,
-            drug_query: drug,
-            start_date, end_date, country, serious, top_n,
-            top_reactions: [],
-            timeseries: [],
-            fetched_at: new Date().toISOString()
-          }
-        });
-      }
-    }
-  }
-
-  return { rows: out };
+/** Input params this function accepts */
+export interface AeTrendsParams {
+  drugs: string[];           // required: one or more drug names
+  start?: string;            // optional: YYYY-MM-DD (inclusive)
+  end?: string;              // optional: YYYY-MM-DD (inclusive)
+  limitDays?: number;        // fallback window if no start/end (default 180)
 }
 
-// ---------- internals ----------
-
-function makeId(drug: string, start: string, end: string, country?: string | null, serious?: "0" | "1" | null, topN?: number) {
-  const c = country ? country : "ALL";
-  const s = (serious === "0" || serious === "1") ? serious : "ALL";
-  return `event:${drug}:${start}-${end}:${c}:${s}:top${topN ?? 20}`;
+/** One row from ae_trends_cache */
+export interface AeTrendRow extends RowDataPacket {
+  drug: string;              // VARCHAR / TEXT (indexed in PK)
+  bucket_date: string;       // DATE as 'YYYY-MM-DD'
+  count_value: number;       // unsigned int
 }
 
-async function fetchAndUpsertAeTrends({
-  drugs, start_date, end_date, country, serious, top_n
-}: {
-  drugs: string[];
-  start_date: string;
-  end_date: string;
-  country?: string | null;
-  serious?: "0" | "1" | null;
-  top_n: number;
-}) {
-  const API_KEY = process.env.OPENFDA_API_KEY;
-  if (!API_KEY) throw new Error("Missing OPENFDA_API_KEY");
-  const base = "https://api.fda.gov/drug/event.json";
+/** Output for a single drug */
+export interface AeTrendSeries {
+  drug: string;
+  points: Array<{ date: string; count: number }>;
+}
 
-  const parts = [
-    `patient.drug.medicinalproduct:"%DRUG%"`,
-    `receivedate:[${start_date} TO ${end_date}]`
-  ];
-  if (country) parts.push(`occurcountry:${country}`);
-  if (serious === "0" || serious === "1") parts.push(`serious:${serious}`);
+/** Output for a multi-drug request */
+export interface AeTrendsResult {
+  range: { start: string; end: string };
+  series: AeTrendSeries[];
+}
 
-  const buildUrlTop = (drug: string) => {
-    const q = parts.map(p => p.replace("%DRUG%", drug)).join(" AND ");
-    const qs = new URLSearchParams({
-      search: q,
-      count: "patient.reaction.reactionmeddrapt.exact",
-      limit: String(top_n),
-      api_key: API_KEY
-    });
-    return `${base}?${qs.toString()}`;
+/**
+ * Fetch cached AE trend points for one or more drugs.
+ * Matches the schema:
+ *   - columns: drug, bucket_date (DATE), count_value, updated_at
+ *   - PK: (drug, bucket_date)
+ */
+export default async function getAeTrendsCached(
+  pool: Pool,
+  params: AeTrendsParams
+): Promise<AeTrendsResult> {
+  // Sanitize drug inputs (no String(...) coercion needed; already string[])
+  const drugs = params.drugs.map((d) => d.trim()).filter(Boolean);
+  if (drugs.length === 0) {
+    throw new Error('getAeTrendsCached: `drugs` must contain at least one value.');
+  }
+
+  // Resolve date range
+  const today = new Date();
+  const end = params.end ?? toYMD(today);
+  const start =
+    params.start ??
+    toYMD(new Date(today.getTime() - (params.limitDays ?? 180) * 24 * 60 * 60 * 1000));
+
+  // Single SQL for all drugs using IN (...) for the drug filter.
+  // Keep the date filter sargable to use your (drug, bucket_date) PK.
+  const sql = `
+    SELECT drug, bucket_date, count_value
+    FROM ae_trends_cache
+    WHERE drug IN (?) AND bucket_date BETWEEN ? AND ?
+    ORDER BY drug ASC, bucket_date ASC
+  `;
+
+  // rows is AeTrendRow[] — fully typed (no any)
+  const [rows] = await pool.query<AeTrendRow[]>(sql, [drugs, start, end]);
+
+  // Group rows by drug (seed with requested drugs to preserve order & include empties)
+  const byDrug = new Map<string, AeTrendSeries>();
+  for (const d of drugs) {
+    byDrug.set(d, { drug: d, points: [] });
+  }
+
+  for (const r of rows) {
+    const series = byDrug.get(r.drug);
+    if (!series) continue;
+    series.points.push({ date: r.bucket_date, count: r.count_value });
+  }
+
+  return {
+    range: { start, end },
+    series: Array.from(byDrug.values()),
   };
+}
 
-  const buildUrlSeries = (drug: string) => {
-    const q = parts.map(p => p.replace("%DRUG%", drug)).join(" AND ");
-    const qs = new URLSearchParams({
-      search: q,
-      count: "receiptdate",
-      api_key: API_KEY
-    });
-    return `${base}?${qs.toString()}`;
-  };
-
-  const fetchJSON = async (url: string, tries = 4) => {
-    let attempt = 0;
-    for (;;) {
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
-      if (res.ok) return res.json();
-      if (res.status === 404) return { results: [] }; // “No matches found”
-      const retryable = res.status === 429 || res.status >= 500;
-      if (!retryable || attempt >= tries - 1) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`openFDA error ${res.status}: ${text.slice(0, 200)}`);
-      }
-      const retryAfter = Number(res.headers.get("Retry-After")) || Math.pow(2, attempt) * 500;
-      await new Promise(r => setTimeout(r, retryAfter));
-      attempt++;
-    }
-  };
-
-  const mapTop = (data: any) =>
-    (data?.results || []).map((r: any) => ({ term: r.term, count: r.count }));
-
-  const mapSeries = (data: any) =>
-    (data?.results || []).map((pt: any) => ({ date: pt.time ?? pt.term, count: pt.count }));
-
-  const rows = await Promise.all(
-    drugs.map(async (drug) => {
-      const [top, series] = await Promise.all([
-        fetchJSON(buildUrlTop(drug)),
-        fetchJSON(buildUrlSeries(drug))
-      ]);
-
-      const id = makeId(drug, start_date, end_date, country, serious, top_n);
-      const row = {
-        id,
-        drug_query: drug,
-        start_date, end_date, country, serious, top_n,
-        top_reactions: mapTop(top),
-        timeseries: mapSeries(series),
-        fetched_at: new Date().toISOString()
-      };
-
-      await db.upsert("ae_trends_cache", row);
-      return row;
-    })
-  );
-
-  return { rows };
+/** Helpers */
+function toYMD(d: Date): string {
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${d.getFullYear()}-${m.toString().padStart(2, '0')}-${day
+    .toString()
+    .padStart(2, '0')}`;
 }

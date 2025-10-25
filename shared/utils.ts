@@ -1,8 +1,9 @@
+// shared/utils.ts
 // Simple cross-runtime helpers
 
 export function formatDate(date: string | Date | null): string {
   if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d: Date = typeof date === 'string' ? new Date(date) : date;
   return d.toISOString().split('T')[0];
 }
 

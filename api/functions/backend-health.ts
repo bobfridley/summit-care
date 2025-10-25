@@ -1,123 +1,121 @@
-import { withCORS } from "../utils/cors";
-import { sendJSON } from "../utils/errors";
-import { env } from "../utils/env";
+// api/functions/backend-health.ts
+export const runtime = 'edge';
+export const preferredRegion = ['iad1', 'sfo1'];
 
-function traceId() {
-  return `b44-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+import { traceId as makeTraceId } from '../base44Client';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
+import { errMsg } from '../utils/errors'; // <-- corrected path
+
+/** CORS */
+const CORS_HEADERS: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+/** Coerce any unknown/error value to a safe string */
+function s(x: unknown): string {
+  return errMsg(x); // errMsg already handles Error | string | unknown
 }
 
-// simple timer
-async function timer<T>(fn: () => Promise<T>) {
+/** Timer helper with strong typing */
+type TimerOk<T> = { ok: true; ms: number; res: T };
+type TimerErr = { ok: false; ms: number; error: string };
+type TimerResult<T> = TimerOk<T> | TimerErr;
+
+async function timer<T>(fn: () => Promise<T>): Promise<TimerResult<T>> {
   const start = Date.now();
   try {
     const res = await fn();
-    return { ok: true as const, ms: Date.now() - start, res };
-  } catch (e: any) {
-    return { ok: false as const, ms: Date.now() - start, error: e?.message ?? String(e) };
+    return { ok: true, ms: Date.now() - start, res };
+  } catch (e: unknown) {
+    return { ok: false, ms: Date.now() - start, error: s(e) };
   }
 }
 
-// Attempt a light Base44 connectivity probe.
-// Uses service-role creds if present. Skips silently if SDK not installed.
-async function base44Probe() {
-  // Only try if creds exist
-  if (!env.BASE44_APP_ID || !env.BASE44_SERVICE_TOKEN) {
-    return { skipped: true };
-  }
-  try {
-    const { createClient } = await import("@base44/sdk");
-    const svc = createClient({ appId: env.BASE44_APP_ID, serviceToken: env.BASE44_SERVICE_TOKEN });
+Deno.serve((req: Request) => {
+  const tid = makeTraceId();
 
-    // Light touch: try a benign call; auth.me() is fine to probe identity.
-    // If the SDK exposes .asServiceRole, prefer it (parity with your Deno impl).
-    const client: any = (svc as any).asServiceRole ?? svc;
-
-    await client.auth?.me?.().catch(() => null);
-    // You could also ping your own Base44 function here if you want:
-    // await client.functions.invoke("backendHealth", { ping: true }).catch(() => null);
-
-    return { skipped: false };
-  } catch (e: any) {
-    // SDK not installed or probe failed
-    throw new Error(e?.message ?? "Base44 probe failed");
-  }
-}
-
-export default withCORS(async (req, res) => {
-  const tid = traceId();
-
-  // Method handling
-  if (!["GET", "HEAD", "OPTIONS"].includes(req.method ?? "")) {
-    res.setHeader("Allow", "GET, HEAD, OPTIONS");
-    res.status(405).end("Method Not Allowed");
-    return;
-  }
-  if (req.method === "OPTIONS") {
-    res.setHeader("X-Trace-Id", tid);
-    res.status(204).end();
-    return;
-  }
-  if (req.method === "HEAD") {
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("X-Trace-Id", tid);
-    res.status(200).end();
-    return;
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: { ...CORS_HEADERS, 'X-Trace-Id': tid } });
   }
 
   try {
+    if (!['GET', 'HEAD'].includes(req.method)) {
+      const ALLOWED = new Set(['GET', 'HEAD']);
+      if (!ALLOWED.has(req.method)) {
+        return new Response('Method Not Allowed', {
+          status: 405,
+          headers: { ...CORS_HEADERS, Allow: 'GET, HEAD, OPTIONS', 'X-Trace-Id': tid },
+        });
+      }
+    }
+
+    if (req.method === 'HEAD') {
+      return new Response(null, {
+        status: 200,
+        headers: { ...CORS_HEADERS, 'Cache-Control': 'no-store', 'X-Trace-Id': tid },
+      });
+    }
+
     /* ------------------------------------------------------------------
        Health checks
        ------------------------------------------------------------------ */
+
     const checks: Record<string, string> = {};
 
-    // ✅ Base44 SDK connectivity (service-role if available)
-    const bCheck = await timer(async () => {
-      const result = await base44Probe();
-      if (result.skipped) {
-        // Keep the same shape but indicate skipped clearly
-        throw new Error("skipped (no BASE44 creds)");
-      }
+    // Base44 SDK connectivity (non-throwing probe)
+    const bCheck = await timer<void>(async () => {
+      const b = createClientFromRequest(req);
+      await b.auth.me().catch(() => null);
     });
-    checks.base44 = bCheck.ok ? `ok (${bCheck.ms}ms)` : bCheck.error?.startsWith("skipped")
-      ? "skipped (no BASE44 creds)"
-      : `fail (${bCheck.error})`;
+    checks.base44 = bCheck.ok ? `ok (${bCheck.ms}ms)` : `fail (${bCheck.error})`;
 
-    // 🧩 Placeholder for future database check
-    const dbCheck = await timer(async () => {
-      // Replace with an actual DB ping when you wire it up
+    // Placeholder DB check (replace with real DB ping when ready)
+    const dbCheck = await timer<void>(async () => {
       await new Promise((r) => setTimeout(r, 20));
     });
     checks.database = dbCheck.ok ? `ok (${dbCheck.ms}ms)` : `fail (${dbCheck.error})`;
 
-    // more checks can be added here (cache, external APIs, etc.)
-
     /* ------------------------------------------------------------------
        Response
        ------------------------------------------------------------------ */
+
     const now = new Date();
-    // Treat "skipped" as neither ok nor fail; only "fail" degrades
-    const overallOk = Object.values(checks).every((v) => v.startsWith("ok") || v.startsWith("skipped"));
+    const overallOk = Object.values(checks).every((v) => v.startsWith('ok'));
 
     const payload = {
-      status: overallOk ? "ok" : "degraded",
-      service: "backendHealth",
+      status: overallOk ? 'ok' : 'degraded',
+      service: 'backendHealth',
       time: now.toISOString(),
       unix: Math.floor(now.getTime() / 1000),
       traceId: tid,
       checks,
-    };
+    } as const;
 
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("X-Trace-Id", tid);
-    sendJSON(res, overallOk ? 200 : 502, payload);
-  } catch (error: any) {
-    const message =
-      error?.response?.data?.message ??
-      error?.response?.data ??
-      error?.message ??
-      String(error);
+    return new Response(JSON.stringify(payload), {
+      status: overallOk ? 200 : 502,
+      headers: {
+        ...CORS_HEADERS,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-Trace-Id': tid,
+      },
+    });
+  } catch (e: unknown) {
+    const msg = s(e);
+    // log only a string to avoid any unsafe-argument lint noise
+    console.error(`backendHealth error [${tid}]: ${msg}`);
 
-    res.setHeader("X-Trace-Id", tid);
-    sendJSON(res, 502, { status: "error", error: message, traceId: tid });
+    return new Response(JSON.stringify({ status: 'error', error: msg, traceId: tid }), {
+      status: 502,
+      headers: {
+        ...CORS_HEADERS,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-Trace-Id': tid,
+      },
+    });
   }
 });

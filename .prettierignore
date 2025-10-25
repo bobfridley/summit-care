@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+scripts
+.vercel
+.next
+coverage
+.husky/_        # generated helper
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
