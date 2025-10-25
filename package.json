@@ -10,7 +10,6 @@
     "typecheck:frontend": "tsc -p tsconfig.json --noEmit",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
     "typecheck:client": "tsc -p tsconfig.client.json --noEmit",
-    "typecheck": "pnpm run typecheck:frontend && pnpm run typecheck:server",
     "typecheck": "pnpm run typecheck:client && pnpm run typecheck:server",
     "test": "vitest",
     "test:run": "vitest run --coverage",
@@ -55,7 +54,6 @@
     "setup:env": "tsx scripts/setup-env.ts",
     "db:gen": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:test": "tsx scripts/test-db.ts",
     "make:client": "node -e \"const fs=require('fs'),p='src/db';fs.mkdirSync(p,{recursive:true});fs.writeFileSync(p+'/client.ts',`import 'dotenv/config';\\nimport mysql from 'mysql2/promise';\\nimport { drizzle } from 'drizzle-orm/mysql2';\\nimport * as schema from './schema';\\n\\nexport const pool = mysql.createPool({\\n  host: process.env.DB_HOST!,\\n  user: process.env.DB_USER!,\\n  password: process.env.DB_PASSWORD!,\\n  database: process.env.DB_NAME!,\\n  port: Number(process.env.DB_PORT ?? 3306),\\n  connectionLimit: 10,\\n});\\n\\nexport const db = drizzle(pool, { schema, mode: 'default' });\\n`);console.log('✓ wrote src/db/client.ts');\"}"
   },
   "dependencies": {
@@ -117,6 +115,8 @@
     "@types/node": "^24.9.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^4.0.1",
     "autoprefixer": "^10.4.20",
@@ -131,6 +131,7 @@
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.24",

@@ -1,5 +1,2 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Fast, staged-only checks via lint-staged (uses your .lintstagedrc.*)
-pnpm exec lint-staged
+npx lint-staged
