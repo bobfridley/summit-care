@@ -1,3 +1,9 @@
 packages:
-  - 'src'
-  - 'scripts'
+  - src
+  - scripts
+
+ignoredBuiltDependencies:
+  - unrs-resolver
+
+onlyBuiltDependencies:
+  - sharp
