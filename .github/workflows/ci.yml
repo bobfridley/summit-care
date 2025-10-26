@@ -29,9 +29,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm run typecheck --if-present
+      - run: pnpm --if-present run typecheck
+      # Vitest (passes with 0 tests)
+      - run: pnpm --if-present run test
       # keep lint non-blocking here; pre-commit enforces locally
       - run: pnpm run lint || true
-
-      # Vitest (passes with 0 tests)
-      - run: pnpm run test --if-present
