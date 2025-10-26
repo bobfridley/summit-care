@@ -1,8 +1,7 @@
 import {
-  mysqlTable, mysqlSchema, varchar, date, int, timestamp, index, foreignKey,
+  mysqlTable, varchar, date, int, timestamp, index,
   primaryKey, tinyint, bigint, mysqlEnum, decimal, unique, text, longtext
 } from "drizzle-orm/mysql-core";
-import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 
 export const aeTrendsCache = mysqlTable("ae_trends_cache", {
 	drug: varchar({ length: 128 }).notNull(),

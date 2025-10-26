@@ -47,6 +47,7 @@
     "rename:jsx-to-tsx": "bash scripts/rename-jsx-to-tsx.sh",
     "ts:nocheck-ui": "bash scripts/ts-nocheck-ui.sh",
     "ts:check": "pnpm typecheck",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "drizzle:pull": "drizzle-kit introspect",
     "drizzle:studio": "drizzle-kit studio",
     "drizzle:check": "drizzle-kit check:sql",

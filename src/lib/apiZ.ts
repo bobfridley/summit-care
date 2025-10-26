@@ -1,5 +1,3 @@
-// apiZ.ts
-/* eslint-disable @typescript-eslint/no-throw-literal */
 import { z } from "zod";
 
 type ReadSchema<T> = z.ZodType<T>;

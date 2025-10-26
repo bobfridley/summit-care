@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "allowJs": false,
+    "types": []
+  },
+  "include": [
+    "{shared,src,backend,drizzle,utils,web,scripts}/**/*.{ts,tsx}",
+    "drizzle.config.ts",
+    "*.ts",
+    "*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    ".vercel",
+    "coverage",
+    "build",
+    "api/**/*",
+    "**/*.d.ts"
+  ]
+}
