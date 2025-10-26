@@ -1,9 +1,14 @@
+name: Deploy (staging)
+
+on:
+  push:
+    branches: [main]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: staging
-      url: https://srv1051247.hstgr.cloud/summit-care-staging
+    environment: staging
+
     env:
       DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
       DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
@@ -13,6 +18,17 @@ jobs:
       PM2_NAME: summitcare-staging
 
     steps:
+      # 1️⃣ Checkout the repo (always first)
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2️⃣ Load SSH key into the agent
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # 3️⃣ Optional: validate environment vars
       - name: Validate env
         run: |
           for v in DEPLOY_USER DEPLOY_HOST APP_DIR; do
@@ -21,6 +37,7 @@ jobs:
             fi
           done
 
+      # 4️⃣ Deploy over SSH
       - name: Deploy to staging server
         run: |
           ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "

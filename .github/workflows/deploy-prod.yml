@@ -1,9 +1,15 @@
+name: Deploy (production)
+
+on:
+  workflow_dispatch: {}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
       name: production
       url: https://srv1051247.hstgr.cloud/summit-care
+
     env:
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -13,12 +19,18 @@ jobs:
       PM2_NAME: summitcare
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Validate env
         run: |
           for v in DEPLOY_USER DEPLOY_HOST APP_DIR; do
-            if [ -z "${!v}" ]; then
-              echo "Missing $v"; exit 1
-            fi
+            if [ -z "${!v}" ]; then echo "Missing $v"; exit 1; fi
           done
 
       - name: Deploy to production server
