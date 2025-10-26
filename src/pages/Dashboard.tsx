@@ -5,7 +5,6 @@ import { createPageUrl } from '@/utils';
 import { mysqlMedications } from '@api/functions';
 import { mysqlClimbs } from '@api/functions';
 
-
 export default function Dashboard() {
   const [medications, setMedications] = useState([]);
   const [climbs, setClimbs] = useState([]);

@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { useState } from 'react';
 
-
 import {
   summitCareMarkColor,
   summitCareMarkMonoDark,

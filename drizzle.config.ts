@@ -3,8 +3,8 @@ import 'dotenv/config';
 import type { Config } from 'drizzle-kit';
 
 export default {
-  schema: './src/db/schema.ts',   // Drizzle reads this
-  out: './src/db',               // Drizzle writes generated files *here only*
+  schema: './src/db/schema.ts', // Drizzle reads this
+  out: './src/db', // Drizzle writes generated files *here only*
   dialect: 'mysql',
   dbCredentials: {
     host: process.env.DB_HOST!,

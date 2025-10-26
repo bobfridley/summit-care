@@ -15,5 +15,15 @@
       "@/shared/*": ["shared/*"]
     }
   },
-  "include": ["src", "shared", "scripts", "drizzle", "utils", "web", "vite.config.*", "types", "types/**/*.d.ts"]
+  "include": [
+    "src",
+    "shared",
+    "scripts",
+    "drizzle",
+    "utils",
+    "web",
+    "vite.config.*",
+    "types",
+    "types/**/*.d.ts"
+  ]
 }

@@ -21,9 +21,7 @@ function toUserShape(x: unknown): B44User {
   const name = typeof x.name === 'string' ? x.name : null;
 
   const roles =
-    Array.isArray(x.roles) && x.roles.every((r) => typeof r === 'string')
-      ? (x.roles)
-      : [];
+    Array.isArray(x.roles) && x.roles.every((r) => typeof r === 'string') ? x.roles : [];
 
   return { id, email, name, roles };
 }

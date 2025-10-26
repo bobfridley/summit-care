@@ -96,7 +96,7 @@ export async function ensureReady(): Promise<void> {
     } finally {
       conn.release();
     }
-  }) ();
+  })();
 
   try {
     await readyPromise;

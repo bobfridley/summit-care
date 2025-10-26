@@ -6,11 +6,7 @@ import { Link } from 'react-router-dom';
 /* ------------------------------------------------------------
    Helper: returns a preloading Link for any lazy page
 ------------------------------------------------------------ */
-function makePreloadLink(
-  path: string,
-  importer: () => Promise<unknown>,
-  label?: string
-) {
+function makePreloadLink(path: string, importer: () => Promise<unknown>, label?: string) {
   const preload = () => {
     // Fire-and-forget to warm the chunk
     void importer();
@@ -21,7 +17,7 @@ function makePreloadLink(
       key={path}
       to={path}
       onMouseEnter={preload}
-      className="hover:underline text-sm text-gray-700 dark:text-gray-300 transition-colors"
+      className='hover:underline text-sm text-gray-700 dark:text-gray-300 transition-colors'
     >
       {label || path.replace('/', '')}
     </Link>

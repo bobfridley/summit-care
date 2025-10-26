@@ -7,14 +7,14 @@
  * Requires .env.local (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)
  */
 
-import "dotenv/config";
-import { pool } from "./db";
+import 'dotenv/config';
+import { pool } from './db';
 
 async function seed() {
-  console.log("🌱 Seeding database...");
+  console.log('🌱 Seeding database...');
 
   // --- MEDICATIONS ----------------------------------------------------------
-  await pool.query("DELETE FROM medications");
+  await pool.query('DELETE FROM medications');
   await pool.query(
     `INSERT INTO medications
       (user_id, name, dose, route, frequency, started_on, stopped_on, notes)
@@ -24,7 +24,7 @@ async function seed() {
   );
 
   // --- CLIMBS ---------------------------------------------------------------
-  await pool.query("DELETE FROM climbs");
+  await pool.query('DELETE FROM climbs');
   await pool.query(
     `INSERT INTO climbs
       (user_id, name, location, date, elevation_gain_m, duration_hr, notes)
@@ -34,7 +34,7 @@ async function seed() {
   );
 
   // --- WORKOUTS -------------------------------------------------------------
-  await pool.query("DELETE FROM workouts");
+  await pool.query('DELETE FROM workouts');
   await pool.query(
     `INSERT INTO workouts
       (user_id, name, type, date, duration_min, sets, reps, weight_kg, notes)
@@ -43,11 +43,11 @@ async function seed() {
       ('u_123', 'Cardio Intervals', 'conditioning', '2025-10-20', 45, NULL, NULL, NULL, '3x10min uphill treadmill')`
   );
 
-  console.log("✅ Seed complete!");
+  console.log('✅ Seed complete!');
   await pool.end();
 }
 
 seed().catch((err) => {
-  console.error("❌ Seed failed:", err);
+  console.error('❌ Seed failed:', err);
   process.exit(1);
 });

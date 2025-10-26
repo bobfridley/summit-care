@@ -39,12 +39,9 @@ export async function db(): Promise<unknown> {
 export const mysqlClimbs = {
   list: (query?: Record<string, unknown>) =>
     apiZ.get('/api/mysql-climbs', { params: query } as any, ClimbListZ),
-  create: (body: Record<string, unknown>) =>
-    api.post('/api/mysql-climbs', { json: body }),
-  update: (body: Record<string, unknown>) =>
-    api.put('/api/mysql-climbs', { json: body }),
-  remove: (id: number) =>
-    api.delete('/api/mysql-climbs?id=' + encodeURIComponent(String(id))),
+  create: (body: Record<string, unknown>) => api.post('/api/mysql-climbs', { json: body }),
+  update: (body: Record<string, unknown>) => api.put('/api/mysql-climbs', { json: body }),
+  remove: (id: number) => api.delete('/api/mysql-climbs?id=' + encodeURIComponent(String(id))),
 };
 
 // ---- MySQL: Medications (RAW reads validated)

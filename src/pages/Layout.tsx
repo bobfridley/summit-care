@@ -13,8 +13,6 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-
-
 const navigationItems = [
   {
     title: 'Overview',

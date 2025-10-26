@@ -6,8 +6,8 @@ A quick, friendly guide to every `package.json` script in this repo. Copy/paste 
 
 ## 🧰 Setup & Environment
 
-| Script | Command | What it does |
-|---|---|---|
+| Script        | Command                    | What it does                                                                                                                                             |
+| ------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **setup:env** | `tsx scripts/setup-env.ts` | Creates `.env.local` from `.env.template`, auto-generates a secure `DB_PASSWORD` if missing, validates required `DB_*` vars, and prints a summary table. |
 
 <details>
@@ -22,12 +22,12 @@ A quick, friendly guide to every `package.json` script in this repo. Copy/paste 
 
 ## 🗄️ Database (Drizzle / MySQL)
 
-| Script | Command | What it does |
-|---|---|---|
-| **drizzle:pull** | `drizzle-kit introspect` | Introspects the live DB and (re)generates `drizzle/schema.ts` into `./drizzle`. Run after schema changes or initial setup. |
-| **drizzle:studio** | `drizzle-kit studio` | Opens a local Drizzle Studio UI to browse tables and run queries visually. |
-| **drizzle:check** | `drizzle-kit check:sql` | Validates generated SQL/migrations. Handy before applying changes. |
-| **db:test** | `tsx scripts/test-db.ts` | Executes a small script that imports the Drizzle client and tries a basic read (e.g., `medications.findMany()`). |
+| Script             | Command                  | What it does                                                                                                               |
+| ------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **drizzle:pull**   | `drizzle-kit introspect` | Introspects the live DB and (re)generates `drizzle/schema.ts` into `./drizzle`. Run after schema changes or initial setup. |
+| **drizzle:studio** | `drizzle-kit studio`     | Opens a local Drizzle Studio UI to browse tables and run queries visually.                                                 |
+| **drizzle:check**  | `drizzle-kit check:sql`  | Validates generated SQL/migrations. Handy before applying changes.                                                         |
+| **db:test**        | `tsx scripts/test-db.ts` | Executes a small script that imports the Drizzle client and tries a basic read (e.g., `medications.findMany()`).           |
 
 <details>
 <summary><strong>Best practices</strong></summary>
@@ -41,10 +41,10 @@ A quick, friendly guide to every `package.json` script in this repo. Copy/paste 
 
 ## 🧹 Code Quality
 
-| Script | Command | What it does |
-|---|---|---|
-| **lint** | `eslint . --max-warnings=0` | Lints the repo and fails on warnings or errors.
-| **lint:fix** | `eslint . --fix --max-warnings=0` | Auto-fixes lintable issues; fails on remaining warnings/errors.
+| Script       | Command                           | What it does                                                    |
+| ------------ | --------------------------------- | --------------------------------------------------------------- |
+| **lint**     | `eslint . --max-warnings=0`       | Lints the repo and fails on warnings or errors.                 |
+| **lint:fix** | `eslint . --fix --max-warnings=0` | Auto-fixes lintable issues; fails on remaining warnings/errors. |
 
 <details>
 <summary><strong>Notes</strong></summary>
@@ -57,11 +57,11 @@ A quick, friendly guide to every `package.json` script in this repo. Copy/paste 
 
 ## 🚀 Runtime (Next.js / Vercel)
 
-| Script | Command | What it does |
-|---|---|---|
-| **dev** | `next dev` | Starts the local development server.
-| **build** | `next build` | Produces an optimized production build.
-| **start** | `next start` | Runs the production build locally.
+| Script    | Command      | What it does                            |
+| --------- | ------------ | --------------------------------------- |
+| **dev**   | `next dev`   | Starts the local development server.    |
+| **build** | `next build` | Produces an optimized production build. |
+| **start** | `next start` | Runs the production build locally.      |
 
 <details>
 <summary><strong>Tips</strong></summary>
@@ -74,14 +74,14 @@ A quick, friendly guide to every `package.json` script in this repo. Copy/paste 
 
 ## 🔐 Required Environment Variables (recap)
 
-| Variable | Purpose | Example |
-|---|---|---|
-| `DB_HOST` | DB hostname | `127.0.0.1` |
-| `DB_PORT` | DB port | `3306` |
-| `DB_USER` | DB username | `summitcare_admin` |
-| `DB_PASSWORD` | DB password | `••••••••` |
-| `DB_NAME` | DB name | `summitcare` |
-| `DB_SSL` | Use TLS (prod often requires) | `true` / `false` |
+| Variable      | Purpose                       | Example            |
+| ------------- | ----------------------------- | ------------------ |
+| `DB_HOST`     | DB hostname                   | `127.0.0.1`        |
+| `DB_PORT`     | DB port                       | `3306`             |
+| `DB_USER`     | DB username                   | `summitcare_admin` |
+| `DB_PASSWORD` | DB password                   | `••••••••`         |
+| `DB_NAME`     | DB name                       | `summitcare`       |
+| `DB_SSL`      | Use TLS (prod often requires) | `true` / `false`   |
 
 > Bonus: `TZ=America/Los_Angeles` keeps timestamps consistent during local dev.
 
@@ -110,4 +110,3 @@ npm run dev
 ---
 
 Happy shipping! 🏔️
-

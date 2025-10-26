@@ -30,7 +30,7 @@ export default function DBAccessHelp() {
       } finally {
         setLoading(false);
       }
-    }) ();
+    })();
     return () => {
       mounted = false;
     };
@@ -184,8 +184,9 @@ sudo iptables-save | sudo tee /etc/iptables/rules.v4 > /dev/null`;
             </div>
           )}
           <div className='text-xs text-gray-500 mt-3'>
-            Tip: If you see &quot;UnknownIssuer&quot;, set MYSQL_SSL_CA to your server CA, or temporarily set
-            MYSQL_SSL_MODE=insecure or MYSQL_SSL_REJECT_UNAUTHORIZED=false in app settings.
+            Tip: If you see &quot;UnknownIssuer&quot;, set MYSQL_SSL_CA to your server CA, or
+            temporarily set MYSQL_SSL_MODE=insecure or MYSQL_SSL_REJECT_UNAUTHORIZED=false in app
+            settings.
           </div>
         </CardContent>
       </Card>

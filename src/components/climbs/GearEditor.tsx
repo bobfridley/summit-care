@@ -1,7 +1,5 @@
 // @ts-nocheck
 
-
-
 const categoryOptions = [
   { value: 'safety', label: 'Safety' },
   { value: 'clothing', label: 'Clothing' },
@@ -80,7 +78,9 @@ export default function GearEditor({ gear = [], onChange }) {
                     <Label className='text-xs'>Item Name</Label>
                     <Input
                       value={g.item_name || ''}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdate(idx, 'item_name', e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleUpdate(idx, 'item_name', e.target.value)
+                      }
                       placeholder='e.g. Helmet'
                       className='border-stone-200'
                     />
@@ -111,7 +111,9 @@ export default function GearEditor({ gear = [], onChange }) {
                       type='number'
                       min={1}
                       value={g.quantity ?? 1}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdate(idx, 'quantity', Number(e.target.value || 1))}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        handleUpdate(idx, 'quantity', Number(e.target.value || 1))
+                      }
                       className='border-stone-200'
                     />
                   </div>
@@ -190,7 +192,9 @@ export default function GearEditor({ gear = [], onChange }) {
                   <Label className='text-xs'>Notes</Label>
                   <Input
                     value={g.notes || ''}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdate(idx, 'notes', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleUpdate(idx, 'notes', e.target.value)
+                    }
                     placeholder='e.g. UIAA certified, size M, rent from shop'
                     className='border-stone-200'
                   />

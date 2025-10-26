@@ -9,7 +9,7 @@ type GlobalLike = {
 const g = globalThis as GlobalLike;
 
 export const env = {
-  OPENAI_API_KEY: (g.process?.env?.OPENAI_API_KEY ?? ''),
+  OPENAI_API_KEY: g.process?.env?.OPENAI_API_KEY ?? '',
   OPENFDA_BASE: g.process?.env?.OPENFDA_BASE ?? 'https://api.fda.gov',
   NODE_ENV: g.process?.env?.NODE_ENV ?? 'development',
 
@@ -30,6 +30,8 @@ export const env = {
   // SSL toggles (parity with your Deno version)
   MYSQL_SSL_CA: g.process?.env?.MYSQL_SSL_CA ?? '',
   MYSQL_SSL_MODE: (g.process?.env?.MYSQL_SSL_MODE ?? 'insecure').toLowerCase(),
-  MYSQL_SSL_REJECT_UNAUTHORIZED: (g.process?.env?.MYSQL_SSL_REJECT_UNAUTHORIZED ?? 'false').toLowerCase(),
+  MYSQL_SSL_REJECT_UNAUTHORIZED: (
+    g.process?.env?.MYSQL_SSL_REJECT_UNAUTHORIZED ?? 'false'
+  ).toLowerCase(),
   MYSQL_SSL_DISABLE: (g.process?.env?.MYSQL_SSL_DISABLE ?? 'false').toLowerCase() === 'true',
 };

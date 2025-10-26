@@ -15,10 +15,7 @@ export function errMsg(e: unknown): string {
     : String(e);
 }
 
-function mergeHeaders(
-  base: HeadersInit | undefined,
-  extra: Record<string, string>
-): Headers {
+function mergeHeaders(base: HeadersInit | undefined, extra: Record<string, string>): Headers {
   const h = new Headers(base);
   for (const [k, v] of Object.entries(extra)) h.set(k, v);
   return h;
@@ -29,20 +26,13 @@ export function sendJSON(
   payload: unknown,
   extraHeaders: Record<string, string> = {}
 ): Response {
-  const headers = mergeHeaders(
-    { 'content-type': 'application/json' },
-    extraHeaders
-  );
+  const headers = mergeHeaders({ 'content-type': 'application/json' }, extraHeaders);
   return new Response(JSON.stringify(payload), { status, headers });
 }
 
 export function handleError(e: unknown, extraHeaders: Record<string, string> = {}): Response {
   if (e instanceof HttpError) {
-    return sendJSON(
-      e.status,
-      { error: e.message, detail: e.detail ?? null },
-      extraHeaders
-    );
+    return sendJSON(e.status, { error: e.message, detail: e.detail ?? null }, extraHeaders);
   }
   const msg = errMsg(e);
   return sendJSON(500, { error: msg }, extraHeaders);

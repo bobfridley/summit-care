@@ -1,6 +1,4 @@
- 
- 
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * Mirrors your shared/type.ts Climb interface.

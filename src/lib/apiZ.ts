@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 type ReadSchema<T> = z.ZodType<T>;
 type WriteSchema<T> = z.ZodType<T>;
@@ -15,19 +15,16 @@ type ApiZOptions<T, TCreate = unknown, TUpdate = unknown> = {
   /** Validate PUT payload (client → server). Optional. */
   updateSchema?: WriteSchema<TUpdate>;
   /** Optional fetch init defaults (headers, credentials, etc.) */
-  fetchInit?: Omit<RequestInit, "method" | "body">;
+  fetchInit?: Omit<RequestInit, 'method' | 'body'>;
 };
 
 type Id = string | number;
 
 function joinUrl(base: string, path: string) {
-  return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+  return `${base.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`;
 }
 
-async function fetchJson<TResp>(
-  url: string,
-  init: RequestInit
-): Promise<TResp> {
+async function fetchJson<TResp>(url: string, init: RequestInit): Promise<TResp> {
   const res = await fetch(url, init);
   if (!res.ok) {
     // try to surface server error payload if available
@@ -64,36 +61,29 @@ async function fetchJson<TResp>(
 export function apiZ<T, TCreate = unknown, TUpdate = unknown>(
   opts: ApiZOptions<T, TCreate, TUpdate>
 ) {
-  const {
-    baseUrl,
-    resource,
-    readSchema,
-    createSchema,
-    updateSchema,
-    fetchInit,
-  } = opts;
+  const { baseUrl, resource, readSchema, createSchema, updateSchema, fetchInit } = opts;
 
   const listSchema = z.array(readSchema);
 
   const base = joinUrl(baseUrl, resource);
 
   return {
-  /**
-   * GET collection or single record.
-   * - get() -> T[]
-   * - get(id) -> T
-   * - get({ query }) -> T[] with query string (e.g., pagination, filters)
-   */
+    /**
+     * GET collection or single record.
+     * - get() -> T[]
+     * - get(id) -> T
+     * - get({ query }) -> T[] with query string (e.g., pagination, filters)
+     */
     async get(
       arg?: Id | { id?: Id; query?: Record<string, string | number | boolean | undefined> }
     ): Promise<T | T[]> {
       let url = base;
       let expectList = true;
 
-      if (typeof arg === "number" || typeof arg === "string") {
+      if (typeof arg === 'number' || typeof arg === 'string') {
         url = joinUrl(base, String(arg));
         expectList = false;
-      } else if (arg && typeof arg === "object") {
+      } else if (arg && typeof arg === 'object') {
         const { id, query } = arg;
         if (id !== undefined) {
           url = joinUrl(base, String(id));
@@ -109,7 +99,7 @@ export function apiZ<T, TCreate = unknown, TUpdate = unknown>(
       }
 
       const data = await fetchJson<unknown>(url, {
-        method: "GET",
+        method: 'GET',
         ...(fetchInit ?? {}),
       });
 
@@ -128,8 +118,8 @@ export function apiZ<T, TCreate = unknown, TUpdate = unknown>(
       }
 
       const data = await fetchJson<unknown>(base, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...(fetchInit?.headers ?? {}) },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(fetchInit?.headers ?? {}) },
         body: JSON.stringify(body),
         ...fetchInit,
       });
@@ -148,8 +138,8 @@ export function apiZ<T, TCreate = unknown, TUpdate = unknown>(
 
       const url = joinUrl(base, String(id));
       const data = await fetchJson<unknown>(url, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...(fetchInit?.headers ?? {}) },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(fetchInit?.headers ?? {}) },
         body: JSON.stringify(body),
         ...fetchInit,
       });
@@ -163,7 +153,7 @@ export function apiZ<T, TCreate = unknown, TUpdate = unknown>(
     async delete(id: Id): Promise<void> {
       const url = joinUrl(base, String(id));
       await fetchJson<unknown>(url, {
-        method: "DELETE",
+        method: 'DELETE',
         ...(fetchInit ?? {}),
       });
     },

@@ -145,7 +145,7 @@ export default function Admin() {
       meta: 'getAeTrendsCached',
     },
   ];
-  
+
   const services: Array<{ name: string; status: string; detail: string; icon: SvgIcon }> = [
     { name: 'API Edge', status: 'ok', detail: 'iad1 / sfo1', icon: Server },
     { name: 'MySQL', status: 'ok', detail: 'us-east-1 / multi-AZ', icon: Database },

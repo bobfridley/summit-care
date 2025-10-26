@@ -24,8 +24,12 @@ interface Repo {
   create(input: ClimbCreate): Promise<Climb>;
 }
 const r: Repo = {
-  async list() { throw new Error('wire repo'); },
-  async create(_input) { throw new Error('wire repo'); },
+  async list() {
+    throw new Error('wire repo');
+  },
+  async create(_input) {
+    throw new Error('wire repo');
+  },
 };
 
 // --- Helpers ---------------------------------------------------------------
@@ -46,8 +50,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const bodyUnknown: unknown = await req.json();                 // 👈 unknown
-    const parsed = ClimbCreate.safeParse(bodyUnknown);             // 👈 validate
+    const bodyUnknown: unknown = await req.json(); // 👈 unknown
+    const parsed = ClimbCreate.safeParse(bodyUnknown); // 👈 validate
     if (!parsed.success) {
       return NextResponse.json(
         { error: 'Validation failed', issues: parsed.error.issues },

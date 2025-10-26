@@ -29,9 +29,7 @@
       "@/*": ["src/*"],
       "@shared/*": ["shared/*"],
       "@api/*": ["src/client-stubs/api/*"]
-    },
-    "jsx": "react-jsx",
-    "moduleResolution": "bundler"
+    }
   },
   "include": ["src", "shared", "scripts", "drizzle", "utils", "web", "vite.config.*", "types"],
   "exclude": [

@@ -1,7 +1,5 @@
 // @ts-nocheck
 
-
-
 export default function DatabaseFilters({
   selectedCategory,
   setSelectedCategory,

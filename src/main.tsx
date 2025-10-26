@@ -9,7 +9,7 @@ import './index.css';
 // ⚡ Code-split: Disclaimer is loaded only when the route is visited
 const Disclaimer = lazy(() => import('@/pages/Disclaimer'));
 // keep a lazy preloader without tripping the rule:
-const _Admin = React.lazy(() => import('./pages/Admin'));  
+const _Admin = React.lazy(() => import('./pages/Admin'));
 
 function Fallback() {
   return <div className='p-6 text-sm text-gray-500'>Loading…</div>;

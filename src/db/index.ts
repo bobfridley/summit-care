@@ -4,7 +4,7 @@ import * as schema from '@/db/schema'; // moved from ../../drizzle/schema.ts
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST!,
-  port: Number(process.env.DB_PORT ?? 3306),   // ✅ include this here too
+  port: Number(process.env.DB_PORT ?? 3306), // ✅ include this here too
   user: process.env.DB_USER!,
   password: process.env.DB_PASSWORD!,
   database: process.env.DB_NAME!,

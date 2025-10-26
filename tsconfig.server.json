@@ -18,7 +18,7 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],                // ⬅️ restore the main alias for server files
+      "@/*": ["src/*"], // ⬅️ restore the main alias for server files
       "@shared/*": ["shared/*"],
       "@api/*": ["src/client-stubs/api/*"],
       "@api": ["src/client-stubs/api/index.ts"]
@@ -27,7 +27,7 @@
   "include": [
     "src/api",
     "src/db",
-    "src/lib",                         // ⬅️ include server libs (db client, zod schemas, utils)
+    "src/lib", // ⬅️ include server libs (db client, zod schemas, utils)
     "scripts",
     "drizzle",
     "shared",

@@ -42,7 +42,7 @@ export function makeCrudHandler<Row extends RowDataPacket>(opts: CrudOptions<Row
     searchableColumns = [],
     orderBy = 'id DESC',
     defaultLimit = 100,
-     
+
     rowSchema: _rowSchema, // intentionally unused (kept for future strict validation)
     createSchema,
     updateSchema,
@@ -133,12 +133,12 @@ export function makeCrudHandler<Row extends RowDataPacket>(opts: CrudOptions<Row
         const data = parsed.data as Record<string, unknown>;
 
         if (ownershipField) {
-          (data)[ownershipField] = user.email ?? null; // prevent spoofing
+          data[ownershipField] = user.email ?? null; // prevent spoofing
         }
 
         const cols = Object.keys(data);
         const placeholders = cols.map(() => '?').join(',');
-        const values = cols.map((k) => (data)[k] ?? null) as unknown[];
+        const values = cols.map((k) => data[k] ?? null) as unknown[];
 
         const sql = `INSERT INTO ${table} (${cols.join(',')}) VALUES (${placeholders})`;
         const res: ResultSetHeader = await db.exec(sql, values);

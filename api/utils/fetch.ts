@@ -42,7 +42,7 @@ export async function httpFetch<T = unknown>(
 
     // We expect JSON here; caller controls <T>
     // @ts-expect-error parse as unknown, caller picks T (API contracts vary by route)
-    const data: T = await res.json().catch(() => ({} as unknown as T));
+    const data: T = await res.json().catch(() => ({}) as unknown as T);
     return { ok: true, data, status, headers };
     //                               ^^^^^ no `any`
   }

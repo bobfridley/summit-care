@@ -48,9 +48,7 @@ const importanceStyles: Record<Importance, string> = {
 export default function GearList({ gear = [] }: GearListProps) {
   const KG_TO_LB = 2.20462;
 
-  const requiredItems = (gear ?? []).filter(
-    (g) => !!g?.required && !!g?.item_name
-  );
+  const requiredItems = (gear ?? []).filter((g) => !!g?.required && !!g?.item_name);
 
   if (requiredItems.length === 0) return null;
 
@@ -59,21 +57,20 @@ export default function GearList({ gear = [] }: GearListProps) {
       typeof item.estimated_weight_kg === 'number' && item.estimated_weight_kg > 0
         ? item.estimated_weight_kg
         : 0;
-    const quantity =
-      typeof item.quantity === 'number' && item.quantity > 0 ? item.quantity : 1;
+    const quantity = typeof item.quantity === 'number' && item.quantity > 0 ? item.quantity : 1;
     return sum + itemWeightKg * quantity;
   }, 0);
 
   const totalEstimatedWeightLb = totalEstimatedWeightKg * KG_TO_LB;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-text-primary font-medium">
-        <ListChecks className="w-4 h-4 text-primary-blue" />
+    <div className='space-y-2'>
+      <div className='flex items-center gap-2 text-text-primary font-medium'>
+        <ListChecks className='w-4 h-4 text-primary-blue' />
         Required Gear ({requiredItems.length})
       </div>
 
-      <div className="space-y-2">
+      <div className='space-y-2'>
         {requiredItems.map((g, idx) => {
           const perItemKg =
             typeof g.estimated_weight_kg === 'number' && g.estimated_weight_kg > 0
@@ -87,22 +84,20 @@ export default function GearList({ gear = [] }: GearListProps) {
           return (
             <div
               key={idx}
-              className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-stone-50 border border-stone-100"
+              className='flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg bg-stone-50 border border-stone-100'
             >
-              <div className="text-sm text-text-primary font-medium">
+              <div className='text-sm text-text-primary font-medium'>
                 {g.item_name}
-                {qty > 1 ? (
-                  <span className="text-text-secondary font-normal"> ×{qty}</span>
-                ) : null}
+                {qty > 1 ? <span className='text-text-secondary font-normal'> ×{qty}</span> : null}
                 {perItemKg > 0 && (
-                  <span className="text-xs text-text-secondary font-normal ml-2">
+                  <span className='text-xs text-text-secondary font-normal ml-2'>
                     ≈ {perItemLb.toFixed(2)} lb each
                     {qty > 1 ? ` • ${totalLb.toFixed(2)} lb total` : ''}
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className='flex items-center gap-2'>
                 {g.importance && (
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full border ${
@@ -126,7 +121,7 @@ export default function GearList({ gear = [] }: GearListProps) {
                 )}
 
                 {g.notes && (
-                  <span className="text-xs text-text-secondary line-clamp-1 max-w-[220px]">
+                  <span className='text-xs text-text-secondary line-clamp-1 max-w-[220px]'>
                     {g.notes}
                   </span>
                 )}
@@ -137,9 +132,9 @@ export default function GearList({ gear = [] }: GearListProps) {
       </div>
 
       {totalEstimatedWeightLb > 0 && (
-        <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 border border-blue-100 mt-4">
-          <div className="text-sm font-medium text-blue-700">Required Gear Subtotal:</div>
-          <div className="text-sm font-bold text-blue-700">
+        <div className='flex items-center justify-between p-2 rounded-lg bg-blue-50 border border-blue-100 mt-4'>
+          <div className='text-sm font-medium text-blue-700'>Required Gear Subtotal:</div>
+          <div className='text-sm font-bold text-blue-700'>
             {totalEstimatedWeightLb.toFixed(2)} lb
           </div>
         </div>

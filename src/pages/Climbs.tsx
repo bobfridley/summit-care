@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { mysqlClimbs } from '@api/functions';
 import { createPageUrl } from '@/utils';
 
-
 export default function ClimbsPage() {
   const [climbs, setClimbs] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -66,8 +65,6 @@ export default function ClimbsPage() {
       console.error('Error deleting climb:', error);
     }
   };
-
-  
 
   // Default catalog for weights/importance/category to backfill existing items
   /*const _normalizeName = (s) =>

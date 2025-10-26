@@ -3,17 +3,17 @@ import type { Pool, RowDataPacket } from 'mysql2/promise';
 
 /** Input params this function accepts */
 export interface AeTrendsParams {
-  drugs: string[];           // required: one or more drug names
-  start?: string;            // optional: YYYY-MM-DD (inclusive)
-  end?: string;              // optional: YYYY-MM-DD (inclusive)
-  limitDays?: number;        // fallback window if no start/end (default 180)
+  drugs: string[]; // required: one or more drug names
+  start?: string; // optional: YYYY-MM-DD (inclusive)
+  end?: string; // optional: YYYY-MM-DD (inclusive)
+  limitDays?: number; // fallback window if no start/end (default 180)
 }
 
 /** One row from ae_trends_cache */
 export interface AeTrendRow extends RowDataPacket {
-  drug: string;              // VARCHAR / TEXT (indexed in PK)
-  bucket_date: string;       // DATE as 'YYYY-MM-DD'
-  count_value: number;       // unsigned int
+  drug: string; // VARCHAR / TEXT (indexed in PK)
+  bucket_date: string; // DATE as 'YYYY-MM-DD'
+  count_value: number; // unsigned int
 }
 
 /** Output for a single drug */
@@ -85,7 +85,5 @@ export default async function getAeTrendsCached(
 function toYMD(d: Date): string {
   const m = d.getMonth() + 1;
   const day = d.getDate();
-  return `${d.getFullYear()}-${m.toString().padStart(2, '0')}-${day
-    .toString()
-    .padStart(2, '0')}`;
+  return `${d.getFullYear()}-${m.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 }

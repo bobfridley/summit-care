@@ -1,5 +1,5 @@
 // schemas.ts (example)
-import { z } from "zod";
+import { z } from 'zod';
 
 export const MedicationSchema = z.object({
   id: z.number(),

@@ -74,11 +74,13 @@ const SidebarProvider = React.forwardRef(
           event.preventDefault();
           toggleSidebar();
         }
-        if (!w) return;                      // SSR-safe guard
-        const onResize = () => { /* ... */ };
+        if (!w) return; // SSR-safe guard
+        const onResize = () => {
+          /* ... */
+        };
         w.addEventListener('resize', onResize, { passive: true });
         return () => w.removeEventListener('resize', onResize);
-      }
+      };
 
       w?.addEventListener('keydown', handleKeyDown);
       return () => w?.removeEventListener('keydown', handleKeyDown);

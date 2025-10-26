@@ -144,31 +144,23 @@
       "compositePrimaryKeys": {
         "climb_gear_items_id": {
           "name": "climb_gear_items_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_gear_climb": {
           "name": "idx_gear_climb",
-          "columns": [
-            "climb_id"
-          ],
+          "columns": ["climb_id"],
           "isUnique": false
         },
         "idx_gear_cat": {
           "name": "idx_gear_cat",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         },
         "idx_gear_imp": {
           "name": "idx_gear_imp",
-          "columns": [
-            "importance"
-          ],
+          "columns": ["importance"],
           "isUnique": false
         }
       },
@@ -177,12 +169,8 @@
           "name": "fk_gear_climb",
           "tableFrom": "climb_gear_items",
           "tableTo": "user_climbs",
-          "columnsFrom": [
-            "climb_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["climb_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -247,9 +235,7 @@
       "compositePrimaryKeys": {
         "climb_medications_id": {
           "name": "climb_medications_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {},
@@ -258,12 +244,8 @@
           "name": "fk_cm_climb",
           "tableFrom": "climb_medications",
           "tableTo": "user_climbs",
-          "columnsFrom": [
-            "climb_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["climb_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -271,12 +253,8 @@
           "name": "fk_cm_med",
           "tableFrom": "climb_medications",
           "tableTo": "user_medications",
-          "columnsFrom": [
-            "medication_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["medication_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -284,10 +262,7 @@
       "uniqueConstraints": {
         "uq_climb_med": {
           "name": "uq_climb_med",
-          "columns": [
-            "climb_id",
-            "medication_id"
-          ]
+          "columns": ["climb_id", "medication_id"]
         }
       },
       "checkConstraint": {}
@@ -352,9 +327,7 @@
       "compositePrimaryKeys": {
         "contraindications_id": {
           "name": "contraindications_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {},
@@ -429,25 +402,18 @@
       "compositePrimaryKeys": {
         "gear_catalog_id": {
           "name": "gear_catalog_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_gear_cat": {
           "name": "idx_gear_cat",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         },
         "ft_gear": {
           "name": "ft_gear",
-          "columns": [
-            "item_name",
-            "notes"
-          ],
+          "columns": ["item_name", "notes"],
           "isUnique": false
         }
       },
@@ -455,9 +421,7 @@
       "uniqueConstraints": {
         "uq_gear_item": {
           "name": "uq_gear_item",
-          "columns": [
-            "item_name"
-          ]
+          "columns": ["item_name"]
         }
       },
       "checkConstraint": {}
@@ -551,24 +515,18 @@
       "compositePrimaryKeys": {
         "gear_preset_items_id": {
           "name": "gear_preset_items_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_gpi_preset": {
           "name": "idx_gpi_preset",
-          "columns": [
-            "gear_preset_id"
-          ],
+          "columns": ["gear_preset_id"],
           "isUnique": false
         },
         "idx_gpi_cat": {
           "name": "idx_gpi_cat",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         }
       },
@@ -577,12 +535,8 @@
           "name": "fk_gpi_catalog",
           "tableFrom": "gear_preset_items",
           "tableTo": "gear_catalog",
-          "columnsFrom": [
-            "gear_catalog_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["gear_catalog_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "cascade"
         },
@@ -590,12 +544,8 @@
           "name": "fk_gpi_preset",
           "tableFrom": "gear_preset_items",
           "tableTo": "gear_presets",
-          "columnsFrom": [
-            "gear_preset_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["gear_preset_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -700,9 +650,7 @@
       "compositePrimaryKeys": {
         "gear_presets_id": {
           "name": "gear_presets_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {},
@@ -710,9 +658,7 @@
       "uniqueConstraints": {
         "uq_preset_name": {
           "name": "uq_preset_name",
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "checkConstraint": {}
@@ -753,17 +699,13 @@
       "compositePrimaryKeys": {
         "medication_altitude_effects_id": {
           "name": "medication_altitude_effects_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_mae_med": {
           "name": "idx_mae_med",
-          "columns": [
-            "medication_database_id"
-          ],
+          "columns": ["medication_database_id"],
           "isUnique": false
         }
       },
@@ -772,12 +714,8 @@
           "name": "fk_mae_meddb",
           "tableFrom": "medication_altitude_effects",
           "tableTo": "medication_database",
-          "columnsFrom": [
-            "medication_database_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["medication_database_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -851,24 +789,18 @@
       "compositePrimaryKeys": {
         "medication_database_id": {
           "name": "medication_database_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_meddb_category": {
           "name": "idx_meddb_category",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         },
         "idx_meddb_risk": {
           "name": "idx_meddb_risk",
-          "columns": [
-            "risk_level"
-          ],
+          "columns": ["risk_level"],
           "isUnique": false
         }
       },
@@ -876,9 +808,7 @@
       "uniqueConstraints": {
         "uq_meddb_name": {
           "name": "uq_meddb_name",
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "checkConstraint": {}
@@ -919,17 +849,13 @@
       "compositePrimaryKeys": {
         "medication_warnings_id": {
           "name": "medication_warnings_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_mw_med": {
           "name": "idx_mw_med",
-          "columns": [
-            "medication_database_id"
-          ],
+          "columns": ["medication_database_id"],
           "isUnique": false
         }
       },
@@ -938,12 +864,8 @@
           "name": "fk_mw_meddb",
           "tableFrom": "medication_warnings",
           "tableTo": "medication_database",
-          "columnsFrom": [
-            "medication_database_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["medication_database_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1001,24 +923,18 @@
       "compositePrimaryKeys": {
         "user_climb_status_history_id": {
           "name": "user_climb_status_history_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_csh_climb": {
           "name": "idx_csh_climb",
-          "columns": [
-            "climb_id"
-          ],
+          "columns": ["climb_id"],
           "isUnique": false
         },
         "idx_csh_time": {
           "name": "idx_csh_time",
-          "columns": [
-            "changed_at"
-          ],
+          "columns": ["changed_at"],
           "isUnique": false
         }
       },
@@ -1027,12 +943,8 @@
           "name": "fk_csh_climb",
           "tableFrom": "user_climb_status_history",
           "tableTo": "user_climbs",
-          "columnsFrom": [
-            "climb_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["climb_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1186,38 +1098,28 @@
       "compositePrimaryKeys": {
         "user_climbs_id": {
           "name": "user_climbs_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_climbs_user": {
           "name": "idx_climbs_user",
-          "columns": [
-            "created_by_email"
-          ],
+          "columns": ["created_by_email"],
           "isUnique": false
         },
         "idx_climbs_start": {
           "name": "idx_climbs_start",
-          "columns": [
-            "planned_start_date"
-          ],
+          "columns": ["planned_start_date"],
           "isUnique": false
         },
         "idx_climbs_status": {
           "name": "idx_climbs_status",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         },
         "idx_climbs_elev": {
           "name": "idx_climbs_elev",
-          "columns": [
-            "elevation"
-          ],
+          "columns": ["elevation"],
           "isUnique": false
         }
       },
@@ -1312,38 +1214,28 @@
       "compositePrimaryKeys": {
         "user_medications_id": {
           "name": "user_medications_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_med_created_by": {
           "name": "idx_med_created_by",
-          "columns": [
-            "created_by_email"
-          ],
+          "columns": ["created_by_email"],
           "isUnique": false
         },
         "idx_med_start_date": {
           "name": "idx_med_start_date",
-          "columns": [
-            "start_date"
-          ],
+          "columns": ["start_date"],
           "isUnique": false
         },
         "idx_med_risk": {
           "name": "idx_med_risk",
-          "columns": [
-            "altitude_risk_level"
-          ],
+          "columns": ["altitude_risk_level"],
           "isUnique": false
         },
         "idx_med_dbid": {
           "name": "idx_med_dbid",
-          "columns": [
-            "medication_database_id"
-          ],
+          "columns": ["medication_database_id"],
           "isUnique": false
         }
       },
@@ -1352,12 +1244,8 @@
           "name": "fk_med_refdb",
           "tableFrom": "user_medications",
           "tableTo": "medication_database",
-          "columnsFrom": [
-            "medication_database_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["medication_database_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "cascade"
         }
@@ -1415,24 +1303,18 @@
       "compositePrimaryKeys": {
         "user_trip_reports_id": {
           "name": "user_trip_reports_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "indexes": {
         "idx_tr_user": {
           "name": "idx_tr_user",
-          "columns": [
-            "created_by_email"
-          ],
+          "columns": ["created_by_email"],
           "isUnique": false
         },
         "idx_tr_climb": {
           "name": "idx_tr_climb",
-          "columns": [
-            "climb_id"
-          ],
+          "columns": ["climb_id"],
           "isUnique": false
         }
       },
@@ -1441,12 +1323,8 @@
           "name": "fk_tr_climb",
           "tableFrom": "user_trip_reports",
           "tableTo": "user_climbs",
-          "columnsFrom": [
-            "climb_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["climb_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "cascade"
         }

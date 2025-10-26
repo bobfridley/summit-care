@@ -5,7 +5,8 @@ const g = globalThis as unknown as {
   process?: { env?: Record<string, string | undefined> };
 };
 
-const ALLOW_ORIGIN = g?.Deno?.env?.get?.('CORS_ALLOW_ORIGIN') ?? g?.process?.env?.CORS_ALLOW_ORIGIN ?? '*';
+const ALLOW_ORIGIN =
+  g?.Deno?.env?.get?.('CORS_ALLOW_ORIGIN') ?? g?.process?.env?.CORS_ALLOW_ORIGIN ?? '*';
 
 export const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': ALLOW_ORIGIN,

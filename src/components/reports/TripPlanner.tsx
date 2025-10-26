@@ -29,7 +29,9 @@ export default function TripPlanner({ tripDetails, setTripDetails }) {
             <Input
               id='destination'
               value={tripDetails.destination}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('destination', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChange('destination', e.target.value)
+              }
               placeholder='e.g. Mount Whitney'
               className='border-stone-200 focus:border-primary-blue'
             />
@@ -46,7 +48,9 @@ export default function TripPlanner({ tripDetails, setTripDetails }) {
             <Input
               id='maxElevation'
               value={tripDetails.maxElevation}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('maxElevation', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChange('maxElevation', e.target.value)
+              }
               placeholder='e.g. 14,505'
               className='border-stone-200 focus:border-primary-blue'
             />
@@ -64,7 +68,9 @@ export default function TripPlanner({ tripDetails, setTripDetails }) {
               id='startDate'
               type='date'
               value={tripDetails.startDate}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('startDate', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChange('startDate', e.target.value)
+              }
               className='border-stone-200 focus:border-primary-blue'
             />
           </div>
@@ -80,7 +86,9 @@ export default function TripPlanner({ tripDetails, setTripDetails }) {
             <Input
               id='duration'
               value={tripDetails.duration}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('duration', e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChange('duration', e.target.value)
+              }
               placeholder='e.g. 3'
               className='border-stone-200 focus:border-primary-blue'
             />
@@ -98,7 +106,9 @@ export default function TripPlanner({ tripDetails, setTripDetails }) {
           <Input
             id='emergencyContact'
             value={tripDetails.emergencyContact}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('emergencyContact', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleChange('emergencyContact', e.target.value)
+            }
             placeholder='Name and phone number'
             className='border-stone-200 focus:border-primary-blue'
           />

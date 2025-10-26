@@ -5,7 +5,6 @@ import { MedicationDatabase } from '@api/entities';
 // removed unused lucide icons
 // import DemoDisclaimer from "../components/common/DemoDisclaimer"; // removed, shown from Layout
 
-
 export default function DatabasePage() {
   const [medications, setMedications] = useState([]);
   const [filteredMedications, setFilteredMedications] = useState([]);

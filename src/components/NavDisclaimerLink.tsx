@@ -10,11 +10,7 @@ export default function NavDisclaimerLink() {
   };
 
   return (
-    <Link
-      to="/disclaimer"
-      onMouseEnter={preload}
-      className="text-sm text-gray-600 hover:underline"
-    >
+    <Link to='/disclaimer' onMouseEnter={preload} className='text-sm text-gray-600 hover:underline'>
       Disclaimer
     </Link>
   );

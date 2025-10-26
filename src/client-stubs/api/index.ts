@@ -8,10 +8,7 @@ export const api = {
   },
 };
 
-export async function invokeLLM<T = unknown>(
-  prompt: string,
-  model = 'gpt-4o-mini'
-): Promise<T> {
+export async function invokeLLM<T = unknown>(prompt: string, model = 'gpt-4o-mini'): Promise<T> {
   const r = await fetch('/api/openai-chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

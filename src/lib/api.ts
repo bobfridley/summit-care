@@ -62,7 +62,9 @@ function baseHeaders(): Record<string, string> {
 export function hasDevToken(): string | null {
   try {
     // Works in browser (has localStorage) and no-DOM server (no localStorage)
-    const g = globalThis as unknown as { localStorage?: { getItem?: (k: string) => string | null } };
+    const g = globalThis as unknown as {
+      localStorage?: { getItem?: (k: string) => string | null };
+    };
     const getItem = g?.localStorage?.getItem;
     if (typeof getItem !== 'function') return null;
     return getItem('dev-auth-token');
@@ -102,7 +104,10 @@ async function request<T>(
     const msg =
       typeof detail === 'string'
         ? detail
-        : (detail && typeof detail === 'object' && 'error' in detail && typeof (detail as any).error === 'string')
+        : detail &&
+            typeof detail === 'object' &&
+            'error' in detail &&
+            typeof (detail as any).error === 'string'
           ? (detail as any).error
           : `HTTP ${res.status}`;
 
@@ -154,10 +159,10 @@ async function getImpl<T>(
 
   if (isZodSchema(a)) {
     schema = a;
-    opts = (b as ApiOptions | undefined);
+    opts = b as ApiOptions | undefined;
   } else if (isZodSchema(b)) {
     schema = b;
-    opts = (a);
+    opts = a;
   } else {
     throw new Error('apiZ.get: a Zod schema is required as either the 2nd or 3rd argument');
   }

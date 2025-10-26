@@ -27,7 +27,7 @@ export interface SelectTriggerProps extends React.HTMLAttributes<HTMLDivElement>
 export function SelectTrigger({ className, ...props }: SelectTriggerProps) {
   return (
     <div
-      role="button"
+      role='button'
       tabIndex={0}
       className={`flex h-10 w-full items-center justify-between rounded-lg border px-3 text-sm ${className ?? ''}`}
       {...props}
@@ -66,7 +66,7 @@ export function SelectItem<TValue extends string = string>({
   const ctx = React.useContext(SelectCtx);
   return (
     <div
-      role="option"
+      role='option'
       data-value={value}
       onClick={() => ctx?.onValueChange(value)}
       className={`cursor-pointer rounded-md px-2 py-1 text-sm hover:bg-stone-100 dark:hover:bg-stone-800 ${className ?? ''}`}

@@ -7,7 +7,7 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
-  { ignores: ['node_modules','dist','.next','.vercel','coverage','build','**/*.d.ts'] },
+  { ignores: ['node_modules', 'dist', '.next', '.vercel', 'coverage', 'build', '**/*.d.ts'] },
 
   // TS across the repo (no project mode)
   {
@@ -15,7 +15,7 @@ export default [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: null,          // ⬅ turn OFF project mode
+        project: null, // ⬅ turn OFF project mode
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
@@ -33,7 +33,7 @@ export default [
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       // disable a few type-aware rules you may have enabled earlier
-      'import/no-unresolved': 'off' // avoid false positives with path aliases/deno specifiers
+      'import/no-unresolved': 'off', // avoid false positives with path aliases/deno specifiers
     },
   },
 
@@ -51,5 +51,8 @@ export default [
   },
 
   // Plain JS
-  { files: ['**/*.{js,mjs,cjs}'], languageOptions: { ecmaVersion: 'latest', sourceType: 'module' } },
+  {
+    files: ['**/*.{js,mjs,cjs}'],
+    languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+  },
 ];

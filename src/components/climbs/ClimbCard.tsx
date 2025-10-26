@@ -110,101 +110,99 @@ export default function ClimbCard({ climb, onEdit, onDelete }: ClimbCardProps) {
       : climb.planned_start_date;
 
   return (
-    <Card className="alpine-card border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-      <CardHeader className="border-b border-stone-100">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="text-xl font-bold text-text-primary mb-2 flex items-center gap-2">
-              <Mountain className="w-6 h-6 text-primary-blue" />
+    <Card className='alpine-card border-0 shadow-lg hover:shadow-xl transition-all duration-300'>
+      <CardHeader className='border-b border-stone-100'>
+        <div className='flex justify-between items-start'>
+          <div className='flex-1'>
+            <CardTitle className='text-xl font-bold text-text-primary mb-2 flex items-center gap-2'>
+              <Mountain className='w-6 h-6 text-primary-blue' />
               {climb.mountain_name}
             </CardTitle>
             {climb.location && (
-              <div className="flex items-center gap-2 text-text-secondary">
-                <MapPin className="w-4 h-4" />
-                <span className="text-sm">{climb.location}</span>
+              <div className='flex items-center gap-2 text-text-secondary'>
+                <MapPin className='w-4 h-4' />
+                <span className='text-sm'>{climb.location}</span>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <Link to={createPageUrl(`ClimbGear?climbId=${climb.id}`)}>
               <Button
-                variant="outline"
-                size="sm"
-                className="hover:bg-primary-blue/10 hover:text-primary-blue"
+                variant='outline'
+                size='sm'
+                className='hover:bg-primary-blue/10 hover:text-primary-blue'
               >
-                <ListChecks className="w-4 h-4 mr-1.5" />
+                <ListChecks className='w-4 h-4 mr-1.5' />
                 Update Gear
               </Button>
             </Link>
             <Button
-              variant="ghost"
-              size="icon"
+              variant='ghost'
+              size='icon'
               onClick={() => onEdit(climb)}
-              className="hover:bg-primary-blue/10 hover:text-primary-blue"
+              className='hover:bg-primary-blue/10 hover:text-primary-blue'
             >
-              <Edit className="w-4 h-4" />
+              <Edit className='w-4 h-4' />
             </Button>
             <Button
-              variant="ghost"
-              size="icon"
+              variant='ghost'
+              size='icon'
               onClick={() => onDelete(climb.id)}
-              className="hover:bg-red-50 hover:text-red-600"
+              className='hover:bg-red-50 hover:text-red-600'
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className='w-4 h-4' />
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-6 space-y-4">
-        <div className="flex flex-wrap gap-2">
+      <CardContent className='p-6 space-y-4'>
+        <div className='flex flex-wrap gap-2'>
           <Badge className={`${getStatusColor(climb.status)} border font-medium`}>
             {climb.status.replace('_', ' ')}
           </Badge>
           <Badge className={`${getDifficultyColor(climb.difficulty_level)} border font-medium`}>
             {climb.difficulty_level}
           </Badge>
-          <Badge variant="outline" className="border-stone-200">
+          <Badge variant='outline' className='border-stone-200'>
             {climb.climbing_style.replace('_', ' ')}
           </Badge>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Ruler className="w-4 h-4 text-text-secondary" />
-              <span className="font-medium text-text-primary">
+        <div className='space-y-3'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-2'>
+              <Ruler className='w-4 h-4 text-text-secondary' />
+              <span className='font-medium text-text-primary'>
                 {climb.elevation.toLocaleString()} ft
               </span>
             </div>
             <div className={`flex items-center gap-1 ${elevationRisk.color}`}>
-              <AlertTriangle className="w-4 h-4" />
-              <span className="text-sm font-medium capitalize">{elevationRisk.level} risk</span>
+              <AlertTriangle className='w-4 h-4' />
+              <span className='text-sm font-medium capitalize'>{elevationRisk.level} risk</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-text-secondary" />
-            <span className="text-text-primary">
-              {Number.isFinite(startDate?.getTime())
-                ? format(startDate!, 'MMMM d, yyyy')
-                : '—'}
+          <div className='flex items-center gap-2'>
+            <Calendar className='w-4 h-4 text-text-secondary' />
+            <span className='text-text-primary'>
+              {Number.isFinite(startDate?.getTime()) ? format(startDate!, 'MMMM d, yyyy') : '—'}
             </span>
           </div>
 
           {climb.duration_days && (
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-text-secondary" />
-              <span className="text-text-primary">
+            <div className='flex items-center gap-2'>
+              <Clock className='w-4 h-4 text-text-secondary' />
+              <span className='text-text-primary'>
                 {climb.duration_days} day{climb.duration_days !== 1 ? 's' : ''}
               </span>
             </div>
           )}
 
           {climb.group_size && (
-            <div className="flex items-center gap-2">
-              <UsersIcon className="w-4 h-4 text-text-secondary" />
-              <span className="text-text-primary">
+            <div className='flex items-center gap-2'>
+              <UsersIcon className='w-4 h-4 text-text-secondary' />
+              <span className='text-text-primary'>
                 {climb.group_size} climber{climb.group_size !== 1 ? 's' : ''}
               </span>
             </div>
@@ -212,26 +210,28 @@ export default function ClimbCard({ climb, onEdit, onDelete }: ClimbCardProps) {
         </div>
 
         {climb.notes && (
-          <div className="p-3 bg-stone-50 rounded-lg border border-stone-100">
-            <p className="text-sm text-text-secondary line-clamp-2">{climb.notes}</p>
+          <div className='p-3 bg-stone-50 rounded-lg border border-stone-100'>
+            <p className='text-sm text-text-secondary line-clamp-2'>{climb.notes}</p>
           </div>
         )}
 
         {climb.weather_concerns && (
-          <div className="flex items-start gap-2 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-            <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-yellow-800">
-              <span className="font-medium">Weather:</span> {climb.weather_concerns}
+          <div className='flex items-start gap-2 p-2 bg-yellow-50 rounded-lg border border-yellow-200'>
+            <AlertTriangle className='w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0' />
+            <p className='text-xs text-yellow-800'>
+              <span className='font-medium'>Weather:</span> {climb.weather_concerns}
             </p>
           </div>
         )}
 
         {/* Required Gear */}
         {Array.isArray(climb.required_gear) && climb.required_gear.length > 0 && (
-          <div className="pt-2 border-t border-stone-100 space-y-3">
+          <div className='pt-2 border-t border-stone-100 space-y-3'>
             <PackWeightSummary
-              gear={formData.required_gear as any[]}    // <- same cast here
-              basePackWeightKg={formData.base_pack_weight_kg === '' ? 0 : formData.base_pack_weight_kg}
+              gear={formData.required_gear as any[]} // <- same cast here
+              basePackWeightKg={
+                formData.base_pack_weight_kg === '' ? 0 : formData.base_pack_weight_kg
+              }
             />
             <GearList gear={climb.required_gear as unknown[]} />
           </div>

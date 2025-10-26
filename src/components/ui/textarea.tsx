@@ -4,8 +4,7 @@ function cn(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(' ');
 }
 
-export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => (

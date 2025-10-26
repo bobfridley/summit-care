@@ -643,7 +643,9 @@ export default function ClimbGear() {
                   <Label className='text-sm'>Backpack</Label>
                   <Input
                     value={backpackName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBackpackName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setBackpackName(e.target.value)
+                    }
                     placeholder='e.g. Osprey Exos 48'
                     className='border-stone-200'
                   />
@@ -655,7 +657,9 @@ export default function ClimbGear() {
                     min='0'
                     step='0.1'
                     value={basePackWeightKg}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBasePackWeightKg(parseFloat(e.target.value || '0'))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setBasePackWeightKg(parseFloat(e.target.value || '0'))
+                    }
                     placeholder='e.g. 1.2'
                     className='border-stone-200'
                   />

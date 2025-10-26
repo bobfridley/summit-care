@@ -27,18 +27,73 @@ import { hasDevToken } from '@/lib/api';
 
 /** Define your routes once (label, path, icon, and a lazy-import for preloading) */
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/dashboard', icon: Mountain, preload: () => import('@/pages/Dashboard') },
-  { label: 'Medications', path: '/medications', icon: Pill, preload: () => import('@/pages/Medications') },
-  { label: 'Database', path: '/database', icon: DatabaseIcon, preload: () => import('@/pages/Database') },
-  { label: 'Reports', path: '/reports', icon: FileBarChart, preload: () => import('@/pages/Reports') },
+  {
+    label: 'Dashboard',
+    path: '/dashboard',
+    icon: Mountain,
+    preload: () => import('@/pages/Dashboard'),
+  },
+  {
+    label: 'Medications',
+    path: '/medications',
+    icon: Pill,
+    preload: () => import('@/pages/Medications'),
+  },
+  {
+    label: 'Database',
+    path: '/database',
+    icon: DatabaseIcon,
+    preload: () => import('@/pages/Database'),
+  },
+  {
+    label: 'Reports',
+    path: '/reports',
+    icon: FileBarChart,
+    preload: () => import('@/pages/Reports'),
+  },
   { label: 'Climbs', path: '/climbs', icon: Activity, preload: () => import('@/pages/Climbs') },
-  { label: 'AI Playground', path: '/aiplayground', icon: Bot, preload: () => import('@/pages/AIPlayground') },
-  { label: 'Brand Assets', path: '/brandassets', icon: PackageOpen, preload: () => import('@/pages/BrandAssets') },
-  { label: 'Climb Gear', path: '/climbgear', icon: Map, preload: () => import('@/pages/ClimbGear') },
-  { label: 'DB Access Help', path: '/dbaccesshelp', icon: HelpCircle, preload: () => import('@/pages/DBAccessHelp') },
-  { label: 'MySQL Schema', path: '/mysqlschema', icon: Code, preload: () => import('@/pages/MySQLSchema') },
-  { label: 'Sample Data', path: '/mysqlsampledata', icon: Code, preload: () => import('@/pages/MySQLSampleData') },
-  { label: 'Disclaimer', path: '/disclaimer', icon: ShieldAlert, preload: () => import('@/pages/Disclaimer') },
+  {
+    label: 'AI Playground',
+    path: '/aiplayground',
+    icon: Bot,
+    preload: () => import('@/pages/AIPlayground'),
+  },
+  {
+    label: 'Brand Assets',
+    path: '/brandassets',
+    icon: PackageOpen,
+    preload: () => import('@/pages/BrandAssets'),
+  },
+  {
+    label: 'Climb Gear',
+    path: '/climbgear',
+    icon: Map,
+    preload: () => import('@/pages/ClimbGear'),
+  },
+  {
+    label: 'DB Access Help',
+    path: '/dbaccesshelp',
+    icon: HelpCircle,
+    preload: () => import('@/pages/DBAccessHelp'),
+  },
+  {
+    label: 'MySQL Schema',
+    path: '/mysqlschema',
+    icon: Code,
+    preload: () => import('@/pages/MySQLSchema'),
+  },
+  {
+    label: 'Sample Data',
+    path: '/mysqlsampledata',
+    icon: Code,
+    preload: () => import('@/pages/MySQLSampleData'),
+  },
+  {
+    label: 'Disclaimer',
+    path: '/disclaimer',
+    icon: ShieldAlert,
+    preload: () => import('@/pages/Disclaimer'),
+  },
 ];
 
 function Skeleton({ className = '' }: { className?: string }) {
@@ -70,8 +125,8 @@ function ActiveLink({
   to: string;
   label: string;
   Icon: React.ComponentType<{ className?: string }>;
-  onPreload: () => void | Promise<unknown>;         // allow async preload
-  onNavigate?: () => void | Promise<void>;          // allow async navigate side-effects
+  onPreload: () => void | Promise<unknown>; // allow async preload
+  onNavigate?: () => void | Promise<void>; // allow async navigate side-effects
   innerRef?: React.Ref<HTMLAnchorElement>;
 }) {
   return (
