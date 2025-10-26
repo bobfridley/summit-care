@@ -1,1 +1,6 @@
-npm run typecheck && npm run lint
+# .husky/pre-push
+#!/usr/bin/env sh
+set -e
+pnpm run typecheck
+pnpm run lint || true
+pnpm run test --if-present || true

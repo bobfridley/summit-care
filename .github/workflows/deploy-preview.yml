@@ -1,0 +1,75 @@
+name: Deploy (preview PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    environment:
+      name: preview
+    steps:
+      - name: Deploy PR preview
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          PREVIEWS_ROOT: /var/www/summit-care-previews
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          NODE_ENV: production
+        run: |
+          ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            command -v pnpm >/dev/null 2>&1 || corepack enable || true
+
+            APP_DIR=\"$PREVIEWS_ROOT/pr-$PR\"
+            PORT=\$((31000 + $PR))             # e.g. PR 123 -> 31123
+            PM2_NAME=\"summitcare-pr-$PR\"
+            BASE=\"/summit-care-pr-$PR\"
+
+            mkdir -p \"\$APP_DIR\"
+            if [ -d \"\$APP_DIR/.git\" ]; then
+              cd \"\$APP_DIR\"
+              git fetch --all --prune
+              git reset --hard origin/${{ github.head_ref || 'main' }}
+              git clean -fd
+            else
+              git clone https://github.com/$REPO \"\$APP_DIR\"
+              cd \"\$APP_DIR\"
+              git fetch origin \"pull/$PR/head:pr-$PR\"
+              git checkout pr-$PR
+            fi
+
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm approve-builds sharp unrs-resolver || true
+
+            BASE_PATH=\"\$BASE\" NODE_ENV=$NODE_ENV pnpm run build
+
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"\$PM2_NAME\" ) \
+              || pnpm dlx pm2 reload \"\$PM2_NAME\" \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name \"\$PM2_NAME\" -- -p \"\$PORT\"
+          "
+  teardown:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    steps:
+      - name: Remove PR preview
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          PREVIEWS_ROOT: /var/www/summit-care-previews
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            APP_DIR=\"$PREVIEWS_ROOT/pr-$PR\"
+            PM2_NAME=\"summitcare-pr-$PR\"
+            pnpm dlx pm2 delete \"\$PM2_NAME\" || true
+            rm -rf \"\$APP_DIR\"
+          "

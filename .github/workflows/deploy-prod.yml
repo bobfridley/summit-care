@@ -1,0 +1,50 @@
+name: Deploy (production)
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-prod-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://srv1051247.hstgr.cloud/summit-care
+
+    steps:
+      - name: Deploy to production server
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.DEPLOY_APP_DIR }} # set to /var/www/summit-care in env secrets
+          NODE_ENV: production
+          PORT: 3000
+          PM2_NAME: summitcare
+        run: |
+          ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            command -v pnpm >/dev/null 2>&1 || corepack enable || true
+            mkdir -p \"$APP_DIR\"
+            cd \"$APP_DIR\"
+            if [ -d .git ]; then
+              git fetch --all --prune
+              git reset --hard origin/main
+              git clean -fd
+            else
+              git clone https://github.com/${{ github.repository }} .
+              git reset --hard origin/main
+            fi
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm approve-builds sharp unrs-resolver || true
+            BASE_PATH=/summit-care NODE_ENV=$NODE_ENV pnpm run build
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
+              || pnpm dlx pm2 reload \"$PM2_NAME\" \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p $PORT
+          "

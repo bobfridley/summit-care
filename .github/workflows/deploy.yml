@@ -1,33 +1,42 @@
-name: Deploy to Hostinger VPS
+name: Deploy
 
 on:
-  push:
-    branches:
-      - main # Change if your main branch has a different name
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    environment:
+      name: production # <— deploy only to this env
+      url: https://yourdomain.com # optional, shows in GitHub UI
 
     steps:
-      # Step 1: Checkout your repository code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Step 2: Set up the SSH agent and add your private key from GitHub secrets
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
-
-      # Step 3: Deploy and run post-deployment commands on your VPS
-      - name: Deploy via SSH
+      - name: Deploy to SummitCare server
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
+          NODE_ENV: production
         run: |
-          ssh -o StrictHostKeyChecking=no root@77.37.63.202 "
-            cd /var/www/summit-care && \
-            git pull origin main && \
-            npm install && \
-            npm run build && \
-            pm2 reload all && \
-            systemctl restart nginx
+          ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            command -v pnpm >/dev/null 2>&1 || corepack enable || true
+            cd \"$APP_DIR\"
+            git fetch --all --prune
+            git reset --hard origin/main
+            git clean -fd
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm approve-builds sharp unrs-resolver || true
+            NODE_ENV=$NODE_ENV pnpm run build
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload summitcare ) \
+              || pnpm dlx pm2 reload summitcare \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name summitcare
           "
