@@ -8,7 +8,7 @@
 
     /* React + Vite */
     "jsx": "react-jsx",
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
 
     /* Project ergonomics */
     "noEmit": true,
