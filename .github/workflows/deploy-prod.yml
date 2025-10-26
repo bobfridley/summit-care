@@ -27,6 +27,30 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Load SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Show loaded SSH keys (fingerprints only)
+        run: ssh-add -l
+
+      - name: Smoke test SSH connectivity
+        run: |
+          set -x
+          ssh -vvv -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
+
+      - name: Show loaded SSH keys (fingerprints only)
+        run: ssh-add -l
+
+      - name: Smoke test SSH connectivity (no side effects)
+        run: |
+          set -x
+          ssh -vvv -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
+
       - name: Validate env
         run: |
           for v in DEPLOY_USER DEPLOY_HOST APP_DIR; do
