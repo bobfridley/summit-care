@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     env:
-      DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }} # e.g. "deploy"
-      DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }} # e.g. "srv1051247.hstgr.cloud"
-      APP_DIR: ${{ secrets.STAGING_APP_DIR }} # e.g. "/var/www/summit-care-staging"
+      DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
+      DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
+      APP_DIR: ${{ secrets.STAGING_APP_DIR }}
       NODE_ENV: production
       PORT: 3001
       PM2_NAME: summitcare-staging
@@ -28,7 +28,6 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # ssh-passphrase:  ${{ secrets.SSH_PASSPHRASE }} # only if your key has a passphrase
 
       - name: Validate env
         run: |
@@ -36,7 +35,6 @@ jobs:
             if [ -z "${!v}" ]; then echo "Missing $v"; exit 1; fi
           done
 
-      # 👇 Added: make host known so we can enable strict checking
       - name: Add host to known_hosts
         run: |
           mkdir -p ~/.ssh
@@ -44,14 +42,13 @@ jobs:
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      # 👇 Added: verbose smoke test (kept non-fatal with `|| true`)
       - name: Smoke test SSH (verbose)
         run: |
-          ssh -vvv -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ok" || true
+          ssh -vvv "$DEPLOY_USER@$DEPLOY_HOST" "echo ok" || true
 
       - name: Deploy to staging
         run: |
-          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
             command -v pnpm >/dev/null 2>&1 || corepack enable || true
 

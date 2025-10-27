@@ -12,64 +12,46 @@ jobs:
   preview:
     runs-on: ubuntu-latest
     if: github.event.action != 'closed'
-    environment: preview
-
-    env:
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }} # e.g. "deploy"
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }} # e.g. "srv1051247.hstgr.cloud"
-      PREVIEWS_ROOT: /var/www/summit-care-previews
-      NODE_ENV: production
-      REPO: ${{ github.repository }}
-      PR: ${{ github.event.pull_request.number }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+    environment:
+      name: preview
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
       - name: Load SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Validate env
-        run: |
-          for v in DEPLOY_USER DEPLOY_HOST PREVIEWS_ROOT PR; do
-            if [ -z "${!v}" ]; then echo "Missing $v"; exit 1; fi
-          done
-
-      # 👇 Added: make host known so we can enable strict checking
       - name: Add host to known_hosts
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      # 👇 Added: verbose smoke test (kept non-fatal with `|| true`)
       - name: Smoke test SSH (verbose)
         run: |
-          ssh -vvv -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ok" || true
+          ssh -vvv "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "echo ok" || true
 
       - name: Deploy PR preview
-        id: deploy
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          PREVIEWS_ROOT: /var/www/summit-care-previews
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          NODE_ENV: production
         run: |
-          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
             command -v pnpm >/dev/null 2>&1 || corepack enable || true
 
             APP_DIR=\"$PREVIEWS_ROOT/pr-$PR\"
-            PORT=\$((31000 + $PR))                   # e.g. PR 123 -> 31123
+            PORT=\$((31000 + $PR))
             PM2_NAME=\"summitcare-pr-$PR\"
-            BASE=\"/summit-care-pr-$PR\"
 
-            mkdir -p \"\$APP_DIR\"
             if [ -d \"\$APP_DIR/.git\" ]; then
               cd \"\$APP_DIR\"
-              git remote set-url origin https://github.com/$REPO || true
-              git fetch origin \"pull/$PR/head:pr-$PR\" --update-head-ok
-              git checkout -B pr-$PR
-              git reset --hard pr-$PR
+              git fetch --all --prune
+              git reset --hard origin/${{ github.head_ref || 'main' }}
               git clean -fd
             else
               git clone https://github.com/$REPO \"\$APP_DIR\"
@@ -80,72 +62,27 @@ jobs:
 
             pnpm install --frozen-lockfile || pnpm install
             pnpm approve-builds sharp unrs-resolver || true
-
-            BASE_PATH=\"\$BASE\" NODE_ENV=$NODE_ENV pnpm run build
-
+            NODE_ENV=$NODE_ENV pnpm run build
             ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"\$PM2_NAME\" ) \
               || pnpm dlx pm2 reload \"\$PM2_NAME\" \
               || pnpm dlx pm2 start 'pnpm -- run start' --name \"\$PM2_NAME\" -- -p \"\$PORT\"
-
-            pnpm dlx pm2 save || true
           "
-
-          echo "url=https://${{ env.DEPLOY_HOST }}/summit-care-pr-${{ env.PR }}/" >> "$GITHUB_OUTPUT"
-
-      - name: Post or update PR comment with preview URL
-        if: success()
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ env.PR }}
-          body: |
-            ✅ **Preview deployed!**
-            🔗 [View preview here](${{ steps.deploy.outputs.url }})
-            _(Updated automatically whenever you push to this PR)_
 
   teardown:
     runs-on: ubuntu-latest
     if: github.event.action == 'closed'
-    environment: preview
-
-    env:
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      PREVIEWS_ROOT: /var/www/summit-care-previews
-      PR: ${{ github.event.pull_request.number }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
-      - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
       - name: Remove PR preview
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          PREVIEWS_ROOT: /var/www/summit-care-previews
+          PR: ${{ github.event.pull_request.number }}
         run: |
-          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
             APP_DIR=\"$PREVIEWS_ROOT/pr-$PR\"
             PM2_NAME=\"summitcare-pr-$PR\"
             pnpm dlx pm2 delete \"\$PM2_NAME\" || true
             rm -rf \"\$APP_DIR\"
           "
-
-      - name: Remove preview comment
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number
-            });
-            const target = comments.data.find(c => c.body.includes('Preview deployed!'));
-            if (target) {
-              await github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: target.id
-              });
-            }

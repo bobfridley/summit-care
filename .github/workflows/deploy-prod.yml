@@ -1,8 +1,9 @@
 name: Deploy (production)
 
-# manual trigger; add workflow_run gating if you prefer auto-after-CI
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+  push:
+    branches: [main]
 
 concurrency:
   group: deploy-prod-${{ github.ref }}
@@ -11,13 +12,11 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://srv1051247.hstgr.cloud/summit-care
+    environment: production
     env:
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }} # e.g. "deploy"
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }} # e.g. "srv1051247.hstgr.cloud"
-      APP_DIR: ${{ secrets.DEPLOY_APP_DIR }} # e.g. "/var/www/summit-care"
+      DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
+      DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+      APP_DIR: ${{ secrets.PROD_APP_DIR }}
       NODE_ENV: production
       PORT: 3000
       PM2_NAME: summitcare
@@ -30,21 +29,7 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # ssh-passphrase:  ${{ secrets.SSH_PASSPHRASE }} # only if your key has a passphrase
 
-      # Optional: custom SSH port
-      # - name: Use custom SSH port
-      #   run: |
-      #     mkdir -p ~/.ssh
-      #     printf "Host ${DEPLOY_HOST}\n  Port 65002\n" >> ~/.ssh/config
-
-      - name: Validate env
-        run: |
-          for v in DEPLOY_USER DEPLOY_HOST APP_DIR; do
-            if [ -z "${!v}" ]; then echo "Missing $v"; exit 1; fi
-          done
-
-      # 👇 Added: make host known so we can enable strict checking
       - name: Add host to known_hosts
         run: |
           mkdir -p ~/.ssh
@@ -52,41 +37,24 @@ jobs:
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      # 👇 Added: verbose smoke test (kept non-fatal with `|| true`)
       - name: Smoke test SSH (verbose)
         run: |
-          ssh -vvv -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ok" || true
-
-      # Optional: smoke test
-      # - name: Smoke test SSH
-      #   run: ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
+          ssh -vvv "$DEPLOY_USER@$DEPLOY_HOST" "echo ok" || true
 
       - name: Deploy to production
         run: |
-          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
             command -v pnpm >/dev/null 2>&1 || corepack enable || true
-
-            mkdir -p \"$APP_DIR\"
             cd \"$APP_DIR\"
-
-            if [ -d .git ]; then
-              git fetch --all --prune
-              git reset --hard origin/main
-              git clean -fd
-            else
-              git clone https://github.com/${{ github.repository }} .
-              git reset --hard origin/main
-            fi
-
+            git fetch --all --prune
+            git reset --hard origin/main
+            git clean -fd
             pnpm install --frozen-lockfile || pnpm install
             pnpm approve-builds sharp unrs-resolver || true
-
-            BASE_PATH=/summit-care NODE_ENV=$NODE_ENV pnpm run build
-
-            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
-              || pnpm dlx pm2 reload \"$PM2_NAME\" \
-              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p $PORT
-
+            NODE_ENV=$NODE_ENV pnpm run build
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload summitcare ) \
+              || pnpm dlx pm2 reload summitcare \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name summitcare -- -p $PORT
             pnpm dlx pm2 save || true
           "
