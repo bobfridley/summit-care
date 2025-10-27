@@ -1,9 +1,9 @@
 packages:
-  - src
-  - scripts
+  - .
 
 ignoredBuiltDependencies:
   - unrs-resolver
 
 onlyBuiltDependencies:
   - sharp
+  - esbuild
