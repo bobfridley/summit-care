@@ -65,7 +65,7 @@ jobs:
             fi
 
             pnpm install --frozen-lockfile || pnpm install
-            pnpm approve-builds sharp unrs-resolver || true
+            pnpm approve-builds -y esbuild sharp unrs-resolver || true
 
             BASE_PATH=/summit-care-staging NODE_ENV=$NODE_ENV pnpm run build
 

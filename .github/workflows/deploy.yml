@@ -34,7 +34,7 @@ jobs:
             git reset --hard origin/main
             git clean -fd
             pnpm install --frozen-lockfile || pnpm install
-            pnpm approve-builds sharp unrs-resolver || true
+            pnpm approve-builds -y esbuild sharp unrs-resolver || true
             NODE_ENV=$NODE_ENV pnpm run build
             ( command -v pm2 >/dev/null 2>&1 && pm2 reload summitcare ) \
               || pnpm dlx pm2 reload summitcare \

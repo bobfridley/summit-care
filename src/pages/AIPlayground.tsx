@@ -1,8 +1,7 @@
 // @ts-nocheck
 import { useState } from 'react';
 
-import { openaiChat } from '@api/functions';
-import { invokeLLM } from '@api/integrations';
+import { openaiChat as invokeLLM } from '@api/functions';
 
 export default function AIPlayground() {
   const [messages, setMessages] = useState([
