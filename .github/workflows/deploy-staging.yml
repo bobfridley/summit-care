@@ -30,25 +30,28 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
           # ssh-passphrase:  ${{ secrets.SSH_PASSPHRASE }} # only if your key has a passphrase
 
-      # Optional: custom SSH port (uncomment & set if not 22)
-      # - name: Use custom SSH port
-      #   run: |
-      #     mkdir -p ~/.ssh
-      #     printf "Host ${DEPLOY_HOST}\n  Port 65002\n" >> ~/.ssh/config
-
       - name: Validate env
         run: |
           for v in DEPLOY_USER DEPLOY_HOST APP_DIR; do
             if [ -z "${!v}" ]; then echo "Missing $v"; exit 1; fi
           done
 
-      # Optional: quick smoke test (remove once stable)
-      # - name: Smoke test SSH
-      #   run: ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
+      # 👇 Added: make host known so we can enable strict checking
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # 👇 Added: verbose smoke test (kept non-fatal with `|| true`)
+      - name: Smoke test SSH (verbose)
+        run: |
+          ssh -vvv -o IdentitiesOnly=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ok" || true
 
       - name: Deploy to staging
         run: |
-          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
             command -v pnpm >/dev/null 2>&1 || corepack enable || true
 

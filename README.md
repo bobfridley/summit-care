@@ -5,6 +5,18 @@ SummitCare is your essential companion for high-altitude adventures. Log your me
 [![Lint & Format](https://github.com/bobfridley/summit-care/actions/workflows/lint.yml/badge.svg)](https://github.com/bobfridley/summit-care/actions/workflows/lint.yml)
 [![Tests](https://github.com/bobfridley/summit-care/actions/workflows/test.yml/badge.svg)](https://github.com/bobfridley/summit-care/actions/workflows/test.yml)
 
+<!-- CI (build+test) -->
+
+[![CI](https://github.com/bobfridley/summit-care/actions/workflows/ci.yml/badge.svg)](https://github.com/bobfridley/summit-care/actions/workflows/ci.yml)
+
+<!-- Deploy: Staging -->
+
+[![Deploy (staging)](https://github.com/bobfridley/summit-care/actions/workflows/deploy-staging.yml/badge.svg)](https://github.com/bobfridley/summit-care/actions/workflows/deploy-staging.yml)
+
+<!-- Deploy: Production -->
+
+[![Deploy (production)](https://github.com/bobfridley/summit-care/actions/workflows/deploy-prod.yml/badge.svg)](https://github.com/bobfridley/summit-care/actions/workflows/deploy-prod.yml)
+
 ## Running the app
 
 ```bash
