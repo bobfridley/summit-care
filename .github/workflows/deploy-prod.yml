@@ -1,7 +1,12 @@
 name: Deploy (production)
 
+# manual trigger; add workflow_run gating if you prefer auto-after-CI
 on:
   workflow_dispatch: {}
+
+concurrency:
+  group: deploy-prod-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -9,11 +14,10 @@ jobs:
     environment:
       name: production
       url: https://srv1051247.hstgr.cloud/summit-care
-
     env:
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }} # e.g. "deploy"
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }} # e.g. "srv1051247.hstgr.cloud"
+      APP_DIR: ${{ secrets.DEPLOY_APP_DIR }} # e.g. "/var/www/summit-care"
       NODE_ENV: production
       PORT: 3000
       PM2_NAME: summitcare
@@ -26,30 +30,13 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # ssh-passphrase:  ${{ secrets.SSH_PASSPHRASE }} # only if your key has a passphrase
 
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Show loaded SSH keys (fingerprints only)
-        run: ssh-add -l
-
-      - name: Smoke test SSH connectivity
-        run: |
-          set -x
-          ssh -vvv -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
-
-      - name: Show loaded SSH keys (fingerprints only)
-        run: ssh-add -l
-
-      - name: Smoke test SSH connectivity (no side effects)
-        run: |
-          set -x
-          ssh -vvv -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
+      # Optional: custom SSH port
+      # - name: Use custom SSH port
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     printf "Host ${DEPLOY_HOST}\n  Port 65002\n" >> ~/.ssh/config
 
       - name: Validate env
         run: |
@@ -57,13 +44,19 @@ jobs:
             if [ -z "${!v}" ]; then echo "Missing $v"; exit 1; fi
           done
 
-      - name: Deploy to production server
+      # Optional: smoke test
+      # - name: Smoke test SSH
+      #   run: ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
+
+      - name: Deploy to production
         run: |
-          ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
             command -v pnpm >/dev/null 2>&1 || corepack enable || true
+
             mkdir -p \"$APP_DIR\"
             cd \"$APP_DIR\"
+
             if [ -d .git ]; then
               git fetch --all --prune
               git reset --hard origin/main
@@ -72,10 +65,15 @@ jobs:
               git clone https://github.com/${{ github.repository }} .
               git reset --hard origin/main
             fi
+
             pnpm install --frozen-lockfile || pnpm install
             pnpm approve-builds sharp unrs-resolver || true
+
             BASE_PATH=/summit-care NODE_ENV=$NODE_ENV pnpm run build
+
             ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
               || pnpm dlx pm2 reload \"$PM2_NAME\" \
               || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p $PORT
+
+            pnpm dlx pm2 save || true
           "

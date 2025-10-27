@@ -4,24 +4,23 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: staging
-
     env:
-      DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.STAGING_APP_DIR }}
+      DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }} # e.g. "deploy"
+      DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }} # e.g. "srv1051247.hstgr.cloud"
+      APP_DIR: ${{ secrets.STAGING_APP_DIR }} # e.g. "/var/www/summit-care-staging"
       NODE_ENV: production
       PORT: 3001
       PM2_NAME: summitcare-staging
 
     steps:
-      # 1️⃣ Checkout the repo (always first)
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
       - name: Checkout repo
         uses: actions/checkout@v4
 
@@ -29,45 +28,33 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # ssh-passphrase:  ${{ secrets.SSH_PASSPHRASE }} # only if your key has a passphrase
 
-      - name: Show loaded SSH keys (fingerprints only)
-        run: ssh-add -l
+      # Optional: custom SSH port (uncomment & set if not 22)
+      # - name: Use custom SSH port
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     printf "Host ${DEPLOY_HOST}\n  Port 65002\n" >> ~/.ssh/config
 
-      - name: Smoke test SSH connectivity
-        run: |
-          set -x
-          ssh -vvv -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
-      # 2️⃣ Load SSH key into the agent
-      - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Show loaded SSH keys (fingerprints only)
-        run: ssh-add -l
-
-      - name: Smoke test SSH connectivity (no side effects)
-        run: |
-          set -x
-          ssh -vvv -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
-
-      # 3️⃣ Optional: validate environment vars
       - name: Validate env
         run: |
           for v in DEPLOY_USER DEPLOY_HOST APP_DIR; do
-            if [ -z "${!v}" ]; then
-              echo "Missing $v"; exit 1
-            fi
+            if [ -z "${!v}" ]; then echo "Missing $v"; exit 1; fi
           done
 
-      # 4️⃣ Deploy over SSH
-      - name: Deploy to staging server
+      # Optional: quick smoke test (remove once stable)
+      # - name: Smoke test SSH
+      #   run: ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "echo ok"
+
+      - name: Deploy to staging
         run: |
-          ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
             command -v pnpm >/dev/null 2>&1 || corepack enable || true
+
             mkdir -p \"$APP_DIR\"
             cd \"$APP_DIR\"
+
             if [ -d .git ]; then
               git fetch --all --prune
               git reset --hard origin/main
@@ -76,10 +63,15 @@ jobs:
               git clone https://github.com/${{ github.repository }} .
               git reset --hard origin/main
             fi
+
             pnpm install --frozen-lockfile || pnpm install
             pnpm approve-builds sharp unrs-resolver || true
+
             BASE_PATH=/summit-care-staging NODE_ENV=$NODE_ENV pnpm run build
+
             ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
               || pnpm dlx pm2 reload \"$PM2_NAME\" \
               || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p $PORT
+
+            pnpm dlx pm2 save || true
           "
