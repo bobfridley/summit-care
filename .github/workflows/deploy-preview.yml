@@ -42,7 +42,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
-            command -v pnpm >/dev/null 2>&1 || corepack enable || true
+            command -v pnpm >/dev/null 2>&1 || /usr/local/bin/corepack enable || true
 
             APP_DIR=\"$PREVIEWS_ROOT/pr-$PR\"
             PORT=\$((31000 + $PR))
