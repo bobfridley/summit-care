@@ -1,7 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+
 import { format } from 'date-fns';
-import { Pill, AlertCircle, Calendar } from 'lucide-react';
+import { Pill, AlertCircle, Calendar } from '@/components/icons';
 import { createPageUrl } from '@/utils';
 
 // shadcn/ui
@@ -51,7 +52,7 @@ export default function RecentMedications({ medications, isLoading }: RecentMedi
             Current Medications
           </CardTitle>
           <Link
-            to={createPageUrl('Medications')}
+            href={createPageUrl('Medications')}
             className='text-primary-blue hover:text-secondary-blue transition-colors text-sm font-medium'
           >
             Manage all →
@@ -80,7 +81,7 @@ export default function RecentMedications({ medications, isLoading }: RecentMedi
             <p className='text-text-secondary mb-4'>
               Start tracking your medications for altitude safety
             </p>
-            <Link to={createPageUrl('Medications')}>
+            <Link href={createPageUrl('Medications')}>
               <button className='px-4 py-2 mountain-gradient text-white rounded-lg hover:opacity-90 transition-opacity'>
                 Add Medication
               </button>
@@ -135,7 +136,7 @@ export default function RecentMedications({ medications, isLoading }: RecentMedi
             {medications.length > 5 && (
               <div className='text-center pt-4'>
                 <Link
-                  to={createPageUrl('Medications')}
+                  href={createPageUrl('Medications')}
                   className='text-primary-blue hover:text-secondary-blue transition-colors font-medium'
                 >
                   View all {medications.length} medications →

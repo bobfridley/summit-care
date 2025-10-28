@@ -1,6 +1,10 @@
 // @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
 import { MedicationDatabase } from '@api/entities';
+import { Search } from '@/components/icons';
+import MedicationCard from '@/components/database/MedicationCard';
+import DatabaseFilters from '@/components/database/DatabaseFilters';
+
 // removed unused Input, Button, Alert components
 // removed unused lucide icons
 // import DemoDisclaimer from "../components/common/DemoDisclaimer"; // removed, shown from Layout
@@ -69,7 +73,7 @@ export default function DatabasePage() {
 
         {/* Removed inline disclaimer; Layout handles it conditionally */}
 
-        <DatabaseSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <Search searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
         <DatabaseFilters
           selectedCategory={selectedCategory}

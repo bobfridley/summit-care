@@ -1,53 +1,127 @@
+// src/pages/ClimbGear.tsx
 // @ts-nocheck
-import { useEffect, useState, useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useEffect, useMemo, useState } from 'react';
 import { createPageUrl } from '@/utils';
 import { mysqlClimbs } from '@api/functions';
+import PackWeightSummary from '@/components/climbs/PackWeightSummary';
+import GearEditor from '@/components/climbs/GearEditor';
 
+// UI + icons (adjust paths if your ui lib lives elsewhere)
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowLeft, Mountain, Save, Wand2 } from '@/components/icons';
+
+// ---- types ----
+type Importance = 'critical' | 'high' | 'recommended' | 'optional';
+type Category =
+  | 'health'
+  | 'food_water'
+  | 'navigation'
+  | 'technical'
+  | 'clothing'
+  | 'camping'
+  | 'safety';
+
+type Defaults = { estimated_weight_kg: number; importance: Importance; category: Category };
+
+export interface GearItem {
+  item_name: string;
+  category: Category;
+  quantity: number;
+  required: boolean;
+  packed: boolean;
+  importance: Importance;
+  estimated_weight_kg: number;
+  notes: string;
+}
+
+export interface Climb {
+  id: number;
+  mountain_name?: string | null;
+  elevation?: number | null;
+  duration_days?: number | null;
+  difficulty_level?: string | null;
+  climbing_style?: string | null;
+  weather_concerns?: string | null;
+  special_equipment?: string | null;
+  group_size?: number | null;
+  backpack_name?: string | null;
+  base_pack_weight_kg?: number | null;
+  required_gear?: GearItem[] | null;
+}
+
+// ---- result-shape helpers ----
+function firstFromListResult(res: any) {
+  if (!res) return null;
+  if (Array.isArray(res)) return res[0] ?? null;
+  if (Array.isArray(res.items)) return res.items[0] ?? null;
+  if (Array.isArray(res.data?.items)) return res.data.items[0] ?? null;
+  if (Array.isArray(res.data)) return res.data[0] ?? null;
+  if (res.item) return res.item;
+  return null;
+}
+function arrayFromListResult(res: any) {
+  if (!res) return [];
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res.items)) return res.items;
+  if (Array.isArray(res.data?.items)) return res.data.items;
+  if (Array.isArray(res.data)) return res.data;
+  return [];
+}
+
+// ---- page component ----
 export default function ClimbGear() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const climbId = urlParams.get('climbId');
+  const router = useRouter();
+  const rawClimbId = router.query.climbId;
+  const climbId = Array.isArray(rawClimbId) ? rawClimbId[0] : rawClimbId;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [climb, setClimb] = useState(null);
-  const [climbs, setClimbs] = useState([]);
-  const [gear, setGear] = useState([]);
+  const [climb, setClimb] = useState<Climb | null>(null);
+  const [climbs, setClimbs] = useState<Climb[]>([]);
+  const [gear, setGear] = useState<GearItem[]>([]);
   const [backpackName, setBackpackName] = useState('');
   const [basePackWeightKg, setBasePackWeightKg] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isAutofilling, setIsAutofilling] = useState(false);
 
   useEffect(() => {
+    if (!router.isReady) return;
     const load = async () => {
       setIsLoading(true);
-      if (climbId) {
-        const { data } = await mysqlClimbs({ action: 'get', id: Number(climbId) });
-        const c = data?.ok ? data.item : null;
-        setClimb(c);
-        setGear(Array.isArray(c?.required_gear) ? c.required_gear : []);
-        setBackpackName(c?.backpack_name || '');
-        setBasePackWeightKg(Number(c?.base_pack_weight_kg || 0));
-      } else {
-        const { data } = await mysqlClimbs({
-          action: 'list',
-          order: 'planned_start_date',
-          dir: 'DESC',
-        });
-        setClimbs(data?.ok ? data.items || [] : []);
+      try {
+        if (climbId) {
+          const resOne = await mysqlClimbs.list({ id: Number(climbId), limit: 1 });
+          const c = firstFromListResult(resOne) as Climb | null;
+          setClimb(c);
+          setGear(Array.isArray(c?.required_gear) ? (c!.required_gear as GearItem[]) : []);
+          setBackpackName(c?.backpack_name || '');
+          setBasePackWeightKg(Number(c?.base_pack_weight_kg || 0));
+        } else {
+          const resMany = await mysqlClimbs.list({ order: 'planned_start_date', dir: 'DESC' });
+          setClimbs(arrayFromListResult(resMany) as Climb[]);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
-    load();
-  }, [climbId]);
+    void load();
+  }, [router.isReady, climbId]);
 
-  // Defaults catalog (weights in kg) for backfilling
-  const normalizeName = (s) =>
+  // ---- defaults catalog (weights in kg) for backfilling ----
+  const normalizeName = (s: string | null | undefined): string =>
     (s || '')
       .toLowerCase()
       .replace(/[^\w]+/g, ' ')
       .trim();
-  const defaultItemCatalog = useMemo(
+
+  const defaultItemCatalog: Map<string, Defaults> = useMemo(
     () =>
-      new Map([
+      new Map<string, Defaults>([
         [
           'first aid kit',
           { estimated_weight_kg: 0.25, importance: 'critical', category: 'health' },
@@ -136,9 +210,13 @@ export default function ClimbGear() {
     []
   );
 
-  const getDefaultsForItem = (nameRaw = '') => {
+  const getDefaultsForItem = (
+    nameRaw: string = ''
+  ): { estimated_weight_kg: number; importance: Importance; category: Category } | null => {
     const n = normalizeName(nameRaw);
-    if (defaultItemCatalog.has(n)) return defaultItemCatalog.get(n);
+    const hit = defaultItemCatalog.get(n);
+    if (hit) return hit;
+
     if (n.includes('water'))
       return { estimated_weight_kg: 3.0, importance: 'critical', category: 'food_water' };
     if (n.includes('quickdraw'))
@@ -153,13 +231,14 @@ export default function ClimbGear() {
       return { estimated_weight_kg: 0.5, importance: 'recommended', category: 'technical' };
     if (n.includes('gaiter'))
       return { estimated_weight_kg: 0.25, importance: 'optional', category: 'clothing' };
+
     return null;
   };
 
-  const backfillGearItem = (item = {}) => {
-    const defaults = getDefaultsForItem(item.item_name);
+  const backfillGearItem = (item: Partial<GearItem> = {}): Partial<GearItem> => {
+    const defaults = getDefaultsForItem(item.item_name ?? '');
     if (!defaults) return item;
-    const updated = { ...item };
+    const updated: Partial<GearItem> = { ...item };
     if (!(typeof updated.estimated_weight_kg === 'number' && updated.estimated_weight_kg > 0)) {
       updated.estimated_weight_kg = defaults.estimated_weight_kg;
     }
@@ -168,7 +247,7 @@ export default function ClimbGear() {
     return updated;
   };
 
-  const generateRecommendedGear = (c) => {
+  const generateRecommendedGear = (c: Climb): GearItem[] => {
     const technical = c?.climbing_style === 'technical_climb';
     const highElevation = (c?.elevation || 0) >= 10000;
     const text = `${c?.weather_concerns || ''} ${c?.special_equipment || ''}`.toLowerCase();
@@ -177,121 +256,124 @@ export default function ClimbGear() {
       c?.difficulty_level || ''
     );
 
-    const base = [
+    const asCat = (v: Category) => v;
+    const asImp = (v: Importance) => v;
+
+    const base: GearItem[] = [
       {
         item_name: 'First Aid Kit',
-        category: 'health',
+        category: asCat('health'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'critical',
+        importance: asImp('critical'),
         estimated_weight_kg: 0.25,
         notes: '',
       },
       {
         item_name: 'Water (3L)',
-        category: 'food_water',
+        category: asCat('food_water'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'critical',
+        importance: asImp('critical'),
         estimated_weight_kg: 3.0,
         notes: 'Hydration system or bottles',
       },
       {
         item_name: 'Nutrition (energy bars/gels)',
-        category: 'food_water',
+        category: asCat('food_water'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'high',
+        importance: asImp('high'),
         estimated_weight_kg: 0.5,
         notes: '',
       },
       {
         item_name: 'Map & Compass or GPS',
-        category: 'navigation',
+        category: asCat('navigation'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'critical',
+        importance: asImp('critical'),
         estimated_weight_kg: 0.15,
         notes: '',
       },
       {
         item_name: 'Headlamp',
-        category: 'technical',
+        category: asCat('technical'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'high',
+        importance: asImp('high'),
         estimated_weight_kg: 0.1,
         notes: 'With spare batteries',
       },
       {
         item_name: 'Insulating Layer',
-        category: 'clothing',
+        category: asCat('clothing'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'high',
+        importance: asImp('high'),
         estimated_weight_kg: 0.4,
         notes: 'Fleece or puffy',
       },
       {
         item_name: 'Shell (Jacket)',
-        category: 'clothing',
+        category: asCat('clothing'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'high',
+        importance: asImp('high'),
         estimated_weight_kg: 0.35,
         notes: 'Water/wind resistant',
       },
       {
         item_name: 'Gloves & Hat',
-        category: 'clothing',
+        category: asCat('clothing'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'recommended',
+        importance: asImp('recommended'),
         estimated_weight_kg: 0.2,
         notes: '',
       },
       {
         item_name: 'Trekking Poles',
-        category: 'technical',
+        category: asCat('technical'),
         quantity: 1,
         required: false,
         packed: false,
-        importance: 'optional',
+        importance: asImp('optional'),
         estimated_weight_kg: 0.6,
         notes: '',
       },
     ];
 
-    const gear = [...base];
+    const gear: GearItem[] = [...base];
 
     // Footwear
     if (technical || highElevation) {
       gear.push({
         item_name: 'Mountaineering Boots',
-        category: 'clothing',
+        category: asCat('clothing'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'high',
+        importance: asImp('high'),
         estimated_weight_kg: 1.8,
         notes: '',
       });
     } else {
       gear.push({
         item_name: 'Hiking Boots',
-        category: 'clothing',
+        category: asCat('clothing'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'high',
+        importance: asImp('high'),
         estimated_weight_kg: 1.2,
         notes: '',
       });
@@ -302,51 +384,51 @@ export default function ClimbGear() {
       gear.push(
         {
           item_name: 'Tent or Bivy',
-          category: 'camping',
+          category: asCat('camping'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'high',
+          importance: asImp('high'),
           estimated_weight_kg: 2.0,
           notes: '',
         },
         {
           item_name: 'Sleeping Bag',
-          category: 'camping',
+          category: asCat('camping'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'high',
+          importance: asImp('high'),
           estimated_weight_kg: 1.2,
           notes: 'Appropriate temp rating',
         },
         {
           item_name: 'Sleeping Pad',
-          category: 'camping',
+          category: asCat('camping'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'recommended',
+          importance: asImp('recommended'),
           estimated_weight_kg: 0.5,
           notes: '',
         },
         {
           item_name: 'Stove & Fuel',
-          category: 'food_water',
+          category: asCat('food_water'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'recommended',
+          importance: asImp('recommended'),
           estimated_weight_kg: 0.4,
           notes: '',
         },
         {
           item_name: 'Cook Kit',
-          category: 'food_water',
+          category: asCat('food_water'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'recommended',
+          importance: asImp('recommended'),
           estimated_weight_kg: 0.3,
           notes: '',
         }
@@ -358,61 +440,61 @@ export default function ClimbGear() {
       gear.push(
         {
           item_name: 'Helmet',
-          category: 'safety',
+          category: asCat('safety'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'critical',
+          importance: asImp('critical'),
           estimated_weight_kg: 0.35,
           notes: '',
         },
         {
           item_name: 'Harness',
-          category: 'technical',
+          category: asCat('technical'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'high',
+          importance: asImp('high'),
           estimated_weight_kg: 0.4,
           notes: '',
         },
         {
           item_name: 'Belay Device & Locking Carabiners',
-          category: 'technical',
+          category: asCat('technical'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'high',
+          importance: asImp('high'),
           estimated_weight_kg: 0.25,
           notes: '',
         },
         {
           item_name: 'Rope (60m)',
-          category: 'technical',
+          category: asCat('technical'),
           quantity: 1,
           required: true,
           packed: false,
-          importance: 'high',
+          importance: asImp('high'),
           estimated_weight_kg: 3.5,
           notes: '',
         },
         {
           item_name: 'Quickdraws (8–12)',
-          category: 'technical',
+          category: asCat('technical'),
           quantity: 1,
           required: false,
           packed: false,
-          importance: 'recommended',
+          importance: asImp('recommended'),
           estimated_weight_kg: 1.0,
           notes: '',
         },
         {
           item_name: 'Protection (nuts/cams)',
-          category: 'technical',
+          category: asCat('technical'),
           quantity: 1,
           required: false,
           packed: false,
-          importance: 'recommended',
+          importance: asImp('recommended'),
           estimated_weight_kg: 1.5,
           notes: '',
         }
@@ -425,45 +507,47 @@ export default function ClimbGear() {
     if (highElevation || mentionsSnowOrIce) {
       gear.push({
         item_name: 'Microspikes',
-        category: 'technical',
+        category: asCat('technical'),
         quantity: 1,
         required: false,
         packed: false,
-        importance: 'recommended',
+        importance: asImp('recommended'),
         estimated_weight_kg: 0.4,
         notes: '',
       });
     }
     if (highish) {
-      gear.push({
-        item_name: 'Crampons',
-        category: 'technical',
-        quantity: 1,
-        required: false,
-        packed: false,
-        importance: 'recommended',
-        estimated_weight_kg: 0.9,
-        notes: '',
-      });
-      gear.push({
-        item_name: 'Ice Axe',
-        category: 'technical',
-        quantity: 1,
-        required: false,
-        packed: false,
-        importance: 'recommended',
-        estimated_weight_kg: 0.5,
-        notes: 'If steep snow',
-      });
+      gear.push(
+        {
+          item_name: 'Crampons',
+          category: asCat('technical'),
+          quantity: 1,
+          required: false,
+          packed: false,
+          importance: asImp('recommended'),
+          estimated_weight_kg: 0.9,
+          notes: '',
+        },
+        {
+          item_name: 'Ice Axe',
+          category: asCat('technical'),
+          quantity: 1,
+          required: false,
+          packed: false,
+          importance: asImp('recommended'),
+          estimated_weight_kg: 0.5,
+          notes: 'If steep snow',
+        }
+      );
     }
     if (technical && (/ice|mixed/.test(text) || advancedDifficulty)) {
       gear.push({
         item_name: 'Ice Tools (pair)',
-        category: 'technical',
+        category: asCat('technical'),
         quantity: 1,
         required: false,
         packed: false,
-        importance: 'optional',
+        importance: asImp('optional'),
         estimated_weight_kg: 1.2,
         notes: '',
       });
@@ -471,11 +555,11 @@ export default function ClimbGear() {
     if (mentionsSnowOrIce || highElevation) {
       gear.push({
         item_name: 'Gaiters',
-        category: 'clothing',
+        category: asCat('clothing'),
         quantity: 1,
         required: false,
         packed: false,
-        importance: 'optional',
+        importance: asImp('optional'),
         estimated_weight_kg: 0.25,
         notes: '',
       });
@@ -484,11 +568,11 @@ export default function ClimbGear() {
     if ((c?.weather_concerns || '').toLowerCase().includes('storm')) {
       gear.push({
         item_name: 'Extra Layers',
-        category: 'clothing',
+        category: asCat('clothing'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'high',
+        importance: asImp('high'),
         estimated_weight_kg: 0.6,
         notes: 'Storm/insulation',
       });
@@ -497,18 +581,18 @@ export default function ClimbGear() {
     if (c?.group_size && c.group_size > 2) {
       gear.push({
         item_name: 'Group Emergency Shelter',
-        category: 'safety',
+        category: asCat('safety'),
         quantity: 1,
         required: true,
         packed: false,
-        importance: 'high',
+        importance: asImp('high'),
         estimated_weight_kg: 0.9,
         notes: '',
       });
     }
 
-    // Deduplicate
-    const seen = new Set();
+    // Deduplicate by normalized name
+    const seen = new Set<string>();
     return gear.filter((g) => {
       const key = normalizeName(g.item_name);
       if (seen.has(key)) return false;
@@ -524,26 +608,23 @@ export default function ClimbGear() {
     const existing = Array.isArray(gear) ? gear.map(backfillGearItem) : [];
     const existingNames = new Set(existing.map((i) => normalizeName(i?.item_name)));
     const additions = recommended.filter((r) => !existingNames.has(normalizeName(r.item_name)));
-    const merged = existing.concat(additions);
-    setGear(merged);
+    setGear(existing.concat(additions));
     setIsAutofilling(false);
   };
 
   const onSave = async () => {
     if (!climb) return;
     setIsSaving(true);
-    await mysqlClimbs({
-      action: 'update',
+    await mysqlClimbs.update({
       id: climb.id,
-      payload: {
-        required_gear: gear,
-        backpack_name: backpackName,
-        base_pack_weight_kg: Number(basePackWeightKg) || 0,
-      },
+      required_gear: gear,
+      backpack_name: backpackName,
+      base_pack_weight_kg: Number(basePackWeightKg) || 0,
     });
     setIsSaving(false);
   };
 
+  // ---- list view (no climbId) ----
   if (!climbId) {
     return (
       <div className='min-h-screen bg-gradient-to-br from-neutral-warm via-white to-stone-50 p-4 md:p-8'>
@@ -551,7 +632,7 @@ export default function ClimbGear() {
           <div className='flex items-center justify-between'>
             <div className='flex items-center gap-3'>
               <Link
-                to={createPageUrl('Climbs')}
+                href={createPageUrl('Climbs')}
                 className='text-text-secondary hover:text-text-primary'
               >
                 <ArrowLeft className='w-5 h-5' />
@@ -561,6 +642,7 @@ export default function ClimbGear() {
               </h1>
             </div>
           </div>
+
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
             {isLoading
               ? Array(6)
@@ -578,7 +660,7 @@ export default function ClimbGear() {
                       <div className='text-sm text-text-secondary'>
                         {(c.elevation || 0).toLocaleString()} ft
                       </div>
-                      <Link to={createPageUrl(`ClimbGear?climbId=${c.id}`)}>
+                      <Link href={createPageUrl('ClimbGear', { climbId: c.id })}>
                         <Button className='mountain-gradient hover:opacity-90 transition-opacity'>
                           Manage Gear
                         </Button>
@@ -592,13 +674,14 @@ export default function ClimbGear() {
     );
   }
 
+  // ---- detail view (with climbId) ----
   return (
     <div className='min-h-screen bg-gradient-to-br from-neutral-warm via-white to-stone-50 p-4 md:p-8'>
       <div className='max-w-5xl mx-auto space-y-6'>
         <div className='flex flex-col md:flex-row md:items-center md:justify-between gap-3'>
           <div className='flex items-center gap-3'>
             <Link
-              to={createPageUrl('Climbs')}
+              href={createPageUrl('Climbs')}
               className='text-text-secondary hover:text-text-primary'
             >
               <ArrowLeft className='w-5 h-5' />
@@ -667,11 +750,13 @@ export default function ClimbGear() {
               </div>
             )}
             <div>
+              {/* These two components are assumed to exist in your codebase */}
               <PackWeightSummary gear={gear} basePackWeightKg={basePackWeightKg} />
             </div>
           </CardContent>
         </Card>
 
+        {/* Assumes GearEditor exists and accepts { gear, onChange } */}
         <GearEditor gear={gear} onChange={setGear} />
       </div>
     </div>

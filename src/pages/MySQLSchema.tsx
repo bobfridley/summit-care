@@ -1,5 +1,9 @@
 // @ts-nocheck
 import { useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Download, Copy } from '@/components/icons';
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function MySQLSchema() {
   const [copied, setCopied] = useState(false);

@@ -1,5 +1,9 @@
 // @ts-nocheck
 import { format } from 'date-fns';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Pill, Calendar } from '@/components/icons';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle } from '@/components/icons';
 
 export default function MedicationSummary({ medications }) {
   const getRiskColor = (level) => {

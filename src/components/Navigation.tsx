@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import Link from 'next/link';
 import {
   Menu as MenuIcon,
   X as CloseIcon,
@@ -16,7 +16,7 @@ import {
   Code,
   Info,
   ShieldAlert,
-} from 'lucide-react';
+} from '@/components/icons';
 import { COLORS } from '@shared/constants';
 import { useAuth } from '@/hooks/useAuth';
 import UserMenu from '@/components/UserMenu';
@@ -130,9 +130,9 @@ function ActiveLink({
   innerRef?: React.Ref<HTMLAnchorElement>;
 }) {
   return (
-    <NavLink
+    <Link
       ref={innerRef}
-      to={to}
+      href={to}
       onMouseEnter={() => void onPreload()}
       onFocus={() => void onPreload()}
       onClick={() => {
@@ -153,7 +153,7 @@ function ActiveLink({
     >
       <Icon className='h-4 w-4' />
       <span>{label}</span>
-    </NavLink>
+    </Link>
   );
 }
 
@@ -224,7 +224,7 @@ export default function Navigation() {
               {open ? <CloseIcon className='h-5 w-5' /> : <MenuIcon className='h-5 w-5' />}
             </button>
 
-            <NavLink to='/dashboard' className='flex items-center gap-2'>
+            <Link href='/dashboard' className='flex items-center gap-2'>
               <Mountain className='h-6 w-6' style={{ color: COLORS.brandGreen }} />
               <span className='text-base font-semibold tracking-tight text-stone-900 dark:text-stone-100'>
                 SummitCare
@@ -236,7 +236,7 @@ export default function Navigation() {
                   Admin
                 </span>
               ) : null}
-            </NavLink>
+            </Link>
           </div>
 
           {/* Right: Desktop Nav + Theme + User */}

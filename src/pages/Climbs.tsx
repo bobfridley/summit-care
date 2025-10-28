@@ -1,8 +1,12 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
-// Removed: import { Climb } from "@api/entities";
 import { mysqlClimbs } from '@api/functions';
 import { createPageUrl } from '@/utils';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Wand2, Plus, Mountain } from '@/components/icons';
+import ClimbForm from '@/components/climbs/ClimbForm';
+import ClimbCard from '@/components/climbs/ClimbCard';
 
 export default function ClimbsPage() {
   const [climbs, setClimbs] = useState([]);
@@ -141,7 +145,7 @@ export default function ClimbsPage() {
             </p>
           </div>
           <div className='flex gap-3'>
-            <Link to={createPageUrl('ClimbGear')}>
+            <Link href={createPageUrl('ClimbGear')}>
               <Button variant='outline' disabled={isLoading} className='shadow-sm'>
                 <Wand2 className='w-5 h-5 mr-2' />
                 Update Gear

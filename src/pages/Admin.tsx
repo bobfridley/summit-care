@@ -13,7 +13,8 @@ import {
   KeyRound,
   RefreshCw,
   ExternalLink,
-} from 'lucide-react';
+} from '@/components/icons';
+import { Card, CardHeader } from '@/components/ui/card';
 
 // ✅ add this:
 type SvgIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -22,7 +23,7 @@ type SvgIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 function cls(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(' ');
 }
-function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
+/*function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
   return (
     <div
       className={cls(
@@ -54,7 +55,7 @@ function CardHeader({
       {right}
     </div>
   );
-}
+}*/
 function Stat({
   icon: Icon,
   label,

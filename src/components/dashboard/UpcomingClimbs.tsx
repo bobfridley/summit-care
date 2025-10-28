@@ -1,6 +1,11 @@
 // @ts-nocheck
 import { format, differenceInCalendarDays } from 'date-fns';
 import { createPageUrl } from '@/utils';
+import Link from 'next/link';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Mountain, MapPin, Ruler, Calendar, AlertTriangle } from '@/components/icons';
 
 export default function UpcomingClimbs({ climbs, isLoading }) {
   const getElevationRisk = (elevation) => {
@@ -46,7 +51,7 @@ export default function UpcomingClimbs({ climbs, isLoading }) {
             Upcoming Climbs
           </CardTitle>
           <Link
-            to={createPageUrl('Climbs')}
+            href={createPageUrl('Climbs')}
             className='text-primary-blue hover:text-secondary-blue transition-colors text-sm font-medium'
           >
             View all →
@@ -74,7 +79,7 @@ export default function UpcomingClimbs({ climbs, isLoading }) {
             <Mountain className='w-12 h-12 text-secondary-blue mx-auto mb-4 opacity-50' />
             <h3 className='text-lg font-medium text-text-primary mb-2'>No upcoming climbs</h3>
             <p className='text-text-secondary mb-4'>Start planning your next adventure</p>
-            <Link to={createPageUrl('Climbs')}>
+            <Link href={createPageUrl('Climbs')}>
               <button className='px-4 py-2 mountain-gradient text-white rounded-lg hover:opacity-90 transition-opacity'>
                 Plan a Climb
               </button>
@@ -159,7 +164,7 @@ export default function UpcomingClimbs({ climbs, isLoading }) {
             {(climbs || []).length > 3 && (
               <div className='text-center pt-4'>
                 <Link
-                  to={createPageUrl('Climbs')}
+                  href={createPageUrl('Climbs')}
                   className='text-primary-blue hover:text-secondary-blue transition-colors font-medium'
                 >
                   View all {(climbs || []).length} climbs →
@@ -172,3 +177,22 @@ export default function UpcomingClimbs({ climbs, isLoading }) {
     </Card>
   );
 }
+
+// --- Named exports for reuse or testing ---
+/**
+ * Utility to calculate elevation risk level and color.
+ * Mirrors logic used internally by UpcomingClimbs component.
+ */
+export function getElevationRisk(elevation: number) {
+  if (elevation >= 14000) return { level: 'extreme', color: 'text-red-600' };
+  if (elevation >= 12000) return { level: 'high', color: 'text-orange-600' };
+  if (elevation >= 10000) return { level: 'moderate', color: 'text-yellow-600' };
+  if (elevation >= 8000) return { level: 'low', color: 'text-blue-600' };
+  return { level: 'minimal', color: 'text-green-600' };
+}
+
+/**
+ * Example shared constant for displaying component version
+ * or validating internal behavior in tests.
+ */
+export const UPCOMING_CLIMBS_VERSION = '1.0.0';

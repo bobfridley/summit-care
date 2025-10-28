@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from '@/components/icons';
 import { COLORS } from '@shared/constants';
 
 // Optional props (so it’s reusable, even if you don’t use them now)

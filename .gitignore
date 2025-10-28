@@ -60,3 +60,4 @@ help_files
 *.txt
 *.ts.tmp
 *.tmp.*
+*.bkup

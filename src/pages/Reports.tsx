@@ -1,6 +1,11 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
 import { mysqlMedications } from '@api/functions';
+import { Button } from '@/components/ui/button';
+import TripPlanner from '@/components/reports/TripPlanner';
+import MedicationSummary from '@/components/reports/MedicationSummary';
+import RiskSummary from '@/components/reports/RiskSummary';
+import { Download, Calendar } from '@/components/icons';
 // (removed unused imports)
 
 // import DemoDisclaimer from "../components/common/DemoDisclaimer"; // removed; Reports is not treated as medication-only page

@@ -1,6 +1,6 @@
 // @ts-nocheck // ← remove later after we trim types further
 import React, { useState } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save } from '@/components/icons';
 
 // shadcn/ui
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';

@@ -28,7 +28,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@shared/*": ["shared/*"],
-      "@api/*": ["src/client-stubs/api/*"]
+      "@api/*": ["src/client-stubs/api/*"],
+      "@ui/*": ["src/components/ui/*"]
     }
   },
   "include": ["src", "shared", "scripts", "drizzle", "utils", "web", "vite.config.*", "types"],

@@ -1,4 +1,9 @@
 // @ts-nocheck
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Mountain, Shield } from '@/components/icons';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, TrendingDown } from '@/components/icons';
 
 export default function RiskOverview({ medications, isLoading, riskCounts }) {
   const getRiskColor = (level) => {

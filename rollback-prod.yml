@@ -1,0 +1,43 @@
+name: Rollback (prod)
+
+on:
+  workflow_dispatch:
+    inputs:
+      targetRef:
+        description: 'Tag/commit/branch to roll back to'
+        required: true
+        type: string
+      lockAfter:
+        description: 'Lock future deploys to this ref?'
+        required: false
+        default: true
+        type: boolean
+      unlock:
+        description: 'Unlock (remove LOCK_TAG) before rollback?'
+        required: false
+        default: false
+        type: boolean
+      skipBuild:
+        description: 'Skip build (checkout + reload only)?'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  call-reusable:
+    uses: ./.github/workflows/reusable-rollback.yml
+    with:
+      envName: production
+      envUrl: https://srv1051247.hstgr.cloud/summit-care
+      basePath: /summit-care
+      pm2Name: summitcare
+      port: 3000
+      targetRef: ${{ inputs.targetRef }}
+      lockAfter: ${{ inputs.lockAfter }}
+      unlock: ${{ inputs.unlock }}
+      skipBuild: ${{ inputs.skipBuild }}
+    secrets:
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

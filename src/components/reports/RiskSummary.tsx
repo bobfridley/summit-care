@@ -1,5 +1,10 @@
 // @ts-nocheck
 import { createPageUrl } from '@/utils';
+import Link from 'next/link';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Mountain, Shield } from '@/components/icons';
+import { AlertTriangle, Info } from '@/components/icons';
+import { Badge } from '@/components/ui/badge';
 
 export default function RiskSummary({ medications }) {
   const getRiskCounts = () => {
@@ -136,7 +141,7 @@ export default function RiskSummary({ medications }) {
         {medications.length === 0 && (
           <div className='text-center text-text-secondary'>
             <Link
-              to={createPageUrl('Medications')}
+              href={createPageUrl('Medications')}
               className='text-primary-blue hover:text-secondary-blue font-medium'
             >
               Add medications to see risk assessment →

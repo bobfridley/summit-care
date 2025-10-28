@@ -1,0 +1,31 @@
+name: Lock to Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [prod, staging, preview]
+        default: prod
+      tag:
+        description: 'Exact tag to lock to (e.g., prod-deploy-2025-10-28-0915-8e3f1c2)'
+        type: string
+        required: true
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply lock
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          TAG: ${{ github.event.inputs.tag }}
+          APP_DIR: ${{ github.event.inputs.environment == 'prod' && secrets.DEPLOY_APP_DIR || (github.event.inputs.environment == 'staging' && secrets.DEPLOY_STAGING_APP_DIR || secrets.DEPLOY_PREVIEW_APP_DIR) }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            mkdir -p \"$APP_DIR/.deploy\"
+            echo \"$TAG\" > \"$APP_DIR/.deploy/LOCK_TAG\"
+            echo \"Locked to: $TAG\"
+          "

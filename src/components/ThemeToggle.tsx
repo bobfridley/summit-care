@@ -14,7 +14,9 @@ export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
-    if (typeof document === 'undefined') return;
+    if (typeof window === 'undefined') return 'light';
+    const stored = window.localStorage?.getItem('theme');
+
     const root = document.documentElement; // HTMLElement
     // Apply class
     root.classList.remove('light', 'dark');

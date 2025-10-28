@@ -1,0 +1,61 @@
+name: Reusable Rollback
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to roll back (prod|staging|preview)'
+        required: true
+        type: string
+      steps_back:
+        description: 'How many deploys back? (1 = previous)'
+        required: true
+        type: number
+    secrets:
+      DEPLOY_USER:
+        required: true
+      DEPLOY_HOST:
+        required: true
+      DEPLOY_APP_DIR:
+        required: false
+      DEPLOY_STAGING_APP_DIR:
+        required: false
+      DEPLOY_PREVIEW_APP_DIR:
+        required: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pick APP_DIR by environment
+        id: pick
+        run: |
+          case "${{ inputs.environment }}" in
+            prod)    echo "APP_DIR=${{ secrets.DEPLOY_APP_DIR }}"         >> "$GITHUB_OUTPUT" ;;
+            staging) echo "APP_DIR=${{ secrets.DEPLOY_STAGING_APP_DIR }}" >> "$GITHUB_OUTPUT" ;;
+            preview) echo "APP_DIR=${{ secrets.DEPLOY_PREVIEW_APP_DIR }}" >> "$GITHUB_OUTPUT" ;;
+            *) echo 'Unknown environment'; exit 1 ;;
+          esac
+
+      - name: Roll back on remote host
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ steps.pick.outputs.APP_DIR }}
+          STEPS_BACK: ${{ inputs.steps_back }}
+        run: |
+          set -e
+          ssh -o StrictHostKeyChecking=no "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            cd \"$APP_DIR\"
+            echo 'Current commit:' && git rev-parse --short HEAD
+            git reset --hard HEAD~${STEPS_BACK}
+            git clean -fd
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm ignored-builds || true
+            NODE_ENV=production pnpm run build
+            # Attempt to reload any of the known PM2 names; ignore failures
+            (pm2 reload summitcare || pm2 reload summitcare-staging || pm2 reload summitcare-preview || true)
+            pnpm dlx pm2 save || true
+            echo 'Rolled back to:' && git rev-parse --short HEAD
+          "

@@ -1,0 +1,103 @@
+name: Reusable Deploy
+
+on:
+  workflow_call:
+    inputs:
+      envName:
+        description: 'Environment name (production|staging|preview)'
+        required: true
+        type: string
+      url:
+        description: 'Public URL for this environment'
+        required: true
+        type: string
+      basePath:
+        description: 'Next.js basePath (e.g. /summit-care)'
+        required: true
+        type: string
+      pm2Name:
+        description: 'PM2 process name'
+        required: true
+        type: string
+      port:
+        description: 'Port for Next.js server (e.g. 3000)'
+        required: true
+        type: number
+      branch:
+        description: 'Git branch to deploy (main|develop). Omit for preview.'
+        required: false
+        type: string
+      isPreview:
+        description: 'Is this a preview deployment?'
+        required: true
+        type: boolean
+      prNumber:
+        description: 'Pull request number (only for preview)'
+        required: false
+        type: number
+    secrets:
+      DEPLOY_USER:
+        required: true
+      DEPLOY_HOST:
+        required: true
+      APP_DIR:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.envName }}
+      url: ${{ inputs.url }}
+    steps:
+      - name: Deploy to remote host
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+          NODE_ENV: production
+          BASE_PATH: ${{ inputs.basePath }}
+          PM2_NAME: ${{ inputs.pm2Name }}
+          PORT: ${{ inputs.port }}
+          IS_PREVIEW: ${{ inputs.isPreview }}
+          BRANCH: ${{ inputs.branch }}
+          PR_NUMBER: ${{ inputs.prNumber }}
+        run: |
+          set -e
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.19.0 --activate)
+
+            mkdir -p \"$APP_DIR\"
+            cd \"$APP_DIR\"
+
+            if [ -d .git ]; then
+              git fetch --all --prune
+              if [ \"$IS_PREVIEW\" = \"true\" ] && [ -n \"$PR_NUMBER\" ]; then
+                git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
+                git checkout pr-$PR_NUMBER
+              else
+                git reset --hard origin/${BRANCH:-main}
+                git clean -fd
+              fi
+            else
+              git clone https://github.com/bobfridley/summit-care .
+              if [ \"$IS_PREVIEW\" = \"true\" ] && [ -n \"$PR_NUMBER\" ]; then
+                git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
+                git checkout pr-$PR_NUMBER
+              else
+                git reset --hard origin/${BRANCH:-main}
+              fi
+            fi
+
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm ignored-builds || true
+
+            BASE_PATH=\"$BASE_PATH\" NODE_ENV=\"$NODE_ENV\" pnpm run build
+
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
+              || pnpm dlx pm2 reload \"$PM2_NAME\" \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p \"$PORT\"
+
+            pnpm dlx pm2 save || true
+          "

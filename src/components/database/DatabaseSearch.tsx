@@ -1,4 +1,7 @@
 // @ts-nocheck
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Search } from '@/components/icons';
 
 export default function DatabaseSearch({ searchQuery, setSearchQuery }) {
   return (

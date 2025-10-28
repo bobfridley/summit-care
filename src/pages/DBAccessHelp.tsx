@@ -2,6 +2,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { egressIp } from '@api/functions';
 import { db } from '@api/functions';
+import { Button } from '@/components/ui/button';
+import { Database } from '@/components/icons';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Shield } from '@/components/icons';
+import { Globe } from '@/components/icons';
+import { Copy } from '@/components/icons';
+import { AlertCircle, Check } from '@/components/icons';
 
 export default function DBAccessHelp() {
   const [ip, setIp] = useState('');

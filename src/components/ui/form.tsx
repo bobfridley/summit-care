@@ -2,7 +2,9 @@
 'use client';
 import * as React from 'react';
 import { FormProvider, useFormContext } from 'react-hook-form';
-
+import { Label } from '@/components/ui/label';
+import { Controller } from 'react-hook-form';
+import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
 
 const Form = FormProvider;

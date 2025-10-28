@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut } from '@/components/icons';
 
 export default function DevSignOutButton() {
   if (!import.meta.env.DEV) return null;

@@ -1,4 +1,17 @@
 // @ts-nocheck
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ListChecks, Plus, Trash2 } from '@/components/icons';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 const categoryOptions = [
   { value: 'safety', label: 'Safety' },

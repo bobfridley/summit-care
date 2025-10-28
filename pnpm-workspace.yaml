@@ -1,9 +1,11 @@
 packages:
-  - .
+  - src
+  - scripts
 
-ignoredBuiltDependencies:
-  - unrs-resolver
+# Remove any "ignoredBuiltDependencies" you had before
+# ignoredBuiltDependencies:  # ← delete this whole key if present
 
 onlyBuiltDependencies:
-  - sharp
   - esbuild
+  - sharp
+  - unrs-resolver

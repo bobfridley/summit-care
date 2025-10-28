@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mountain, AlertTriangle, Shield, Info } from 'lucide-react';
+import { Mountain, AlertTriangle, Shield, Info } from '@/components/icons';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 

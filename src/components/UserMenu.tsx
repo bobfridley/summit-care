@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 
 /* helpers */
@@ -23,8 +23,8 @@ function RouterLinkMenuItem({
   onClick?: () => void | Promise<void>;
 }) {
   return (
-    <RouterLink
-      to={to}
+    <Link
+      href={to}
       onClick={() => {
         if (onClick) void onClick();
       }}
@@ -32,7 +32,7 @@ function RouterLinkMenuItem({
       role='menuitem'
     >
       {children}
-    </RouterLink>
+    </Link>
   );
 }
 
@@ -66,12 +66,12 @@ export default function UserMenu() {
 
   if (status === 'anon') {
     return (
-      <RouterLink
-        to='/login'
+      <Link
+        href='/login'
         className='rounded-xl px-3 py-2 text-sm text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800/60'
       >
         Sign in
-      </RouterLink>
+      </Link>
     );
   }
 

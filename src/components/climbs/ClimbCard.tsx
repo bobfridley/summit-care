@@ -1,7 +1,10 @@
 // @ts-nocheck // ← remove this line later once everything compiles cleanly
 import React from 'react';
 import { format } from 'date-fns';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+
 import {
   Mountain,
   MapPin,
@@ -12,8 +15,8 @@ import {
   AlertTriangle,
   Calendar,
   Clock,
-  Users as UsersIcon,
-} from 'lucide-react';
+  UsersIcon,
+} from '@/components/icons';
 import { createPageUrl } from '@/utils';
 
 // shadcn/ui
@@ -126,7 +129,7 @@ export default function ClimbCard({ climb, onEdit, onDelete }: ClimbCardProps) {
             )}
           </div>
           <div className='flex items-center gap-2'>
-            <Link to={createPageUrl(`ClimbGear?climbId=${climb.id}`)}>
+            <Link href={createPageUrl('ClimbGear', { climbId: c.id })}>
               <Button
                 variant='outline'
                 size='sm'

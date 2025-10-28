@@ -1,0 +1,45 @@
+/* src/styles/globals.css */
+
+/* Tailwind layers (keep if using Tailwind; otherwise harmless) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App theme tokens */
+:root {
+  --brand: #2d5016;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+}
+
+/* Light/Dark helpers */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Page base */
+html,
+body,
+#__next {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    'Noto Sans',
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol',
+    'Noto Color Emoji',
+    sans-serif;
+  background: #fafaf9;
+  color: var(--text-primary);
+}

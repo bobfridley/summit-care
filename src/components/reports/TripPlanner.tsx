@@ -1,4 +1,8 @@
 // @ts-nocheck
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Mountain, MapPin, Calendar, Clock, Phone } from '@/components/icons';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 export default function TripPlanner({ tripDetails, setTripDetails }) {
   const handleChange = (field, value) => {

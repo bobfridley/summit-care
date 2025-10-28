@@ -1,5 +1,5 @@
 import React from 'react';
-import { ListChecks } from 'lucide-react';
+import { ListChecks } from '@/components/icons';
 
 type GearCategory =
   | 'safety'

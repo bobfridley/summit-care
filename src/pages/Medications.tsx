@@ -1,9 +1,10 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
-// import { Medication } from "@api/entities"; // Replaced by mysqlMedications
 import { mysqlMedications } from '@api/functions'; // New import
-
-// import DemoDisclaimer from "../components/common/DemoDisclaimer"; // removed, shown from Layout
+import { Button } from '@/components/ui/button';
+import { Plus } from '@/components/icons';
+import MedicationForm from '@/components/medications/MedicationForm';
+import MedicationList from '@/components/medications/MedicationList';
 
 export default function MedicationsPage() {
   const [medications, setMedications] = useState([]);

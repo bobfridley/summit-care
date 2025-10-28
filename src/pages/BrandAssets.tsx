@@ -1,6 +1,21 @@
 // @ts-nocheck
 import { useState } from 'react';
-import { Image as ImageIcon } from 'lucide-react';
+
+import { FileText, ImageIcon, Download } from '@/components/icons';
+
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+
+// UI
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'; // or "@/components/ui/Card"
+import { Button } from '@/components/ui/button'; // or "@/components/ui/Button"
+// or "@/components/ui/Input"
+// or "@/components/ui/Label"
 
 import {
   summitCareMarkColor,

@@ -1,4 +1,13 @@
 // @ts-nocheck
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Filter } from '@/components/icons';
 
 export default function DatabaseFilters({
   selectedCategory,

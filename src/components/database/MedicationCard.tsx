@@ -1,4 +1,8 @@
 // @ts-nocheck
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Shield } from '@/components/icons';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle, Info } from '@/components/icons';
 
 export default function MedicationCard({ medication }) {
   const getRiskColor = (level) => {

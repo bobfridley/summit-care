@@ -2,22 +2,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = (() => {
   const raw = process.env.BASE_PATH || '';
+  // normalize: "", "/foo", "/foo-bar" (strip trailing slash if present)
   const basePath = raw === '' ? '' : raw.startsWith('/') ? raw.replace(/\/$/, '') : `/${raw}`;
 
   return {
     reactStrictMode: true,
 
-    basePath, // "", "/summit-care", "/summit-care-staging", "/summit-care-pr-123"
-    assetPrefix: basePath || undefined,
+    // Subdirectory deploy root (handled automatically by Next for routes & assets)
+    basePath, // e.g., "", "/summit-care", "/summit-care-staging", "/summit-care-preview"
 
-    // Expose base path for occasional manual use in client code
+    // Expose to client when occasionally needed in code
     env: {
       NEXT_PUBLIC_BASE_PATH: basePath,
     },
 
-    images: {
-      path: `${basePath}/_next/image`,
-    },
+    // For server/PM2 deploys; creates a .next/standalone bundle
+    output: 'standalone',
+
+    // You DON'T need images.path; Next adjusts for basePath automatically
+    // images: { path: `${basePath}/_next/image` }, // ← remove
+
+    // Only set assetPrefix if you have a CDN domain. Otherwise omit it.
+    // assetPrefix: 'https://cdn.example.com', // ← not needed for subdirectory hosting
   };
 })();
 

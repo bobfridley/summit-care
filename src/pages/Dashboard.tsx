@@ -1,6 +1,20 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
 import { createPageUrl } from '@/utils';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus } from '@/components/icons';
+import Link from 'next/link';
+import { Pill } from '@/components/icons';
+import { Badge } from '@/components/ui/badge';
+import { Shield } from '@/components/icons';
+import { TrendingUp } from '@/components/icons';
+import UpcomingClimbs from '@/components/dashboard/UpcomingClimbs';
+import RiskOverview from '@/components/dashboard/RiskOverview';
+import RecentMedications from '@/components/dashboard/RecentMedications';
+import AltitudeInsights from '@/components/dashboard/AltitudeInsights';
+import { Mountain, AlertTriangle } from '@/components/icons';
+
 // removed unused Alert components
 import { mysqlMedications } from '@api/functions';
 import { mysqlClimbs } from '@api/functions';
@@ -71,13 +85,13 @@ export default function Dashboard() {
             </p>
           </div>
           <div className='flex gap-3'>
-            <Link to={createPageUrl('Climbs')}>
+            <Link href={createPageUrl('Climbs')}>
               <Button variant='outline' className='shadow-sm'>
                 <Mountain className='w-5 h-5 mr-2' />
                 Plan Climb
               </Button>
             </Link>
-            <Link to={createPageUrl('Medications')}>
+            <Link href={createPageUrl('Medications')}>
               <Button className='mountain-gradient hover:opacity-90 transition-opacity shadow-lg'>
                 <Plus className='w-5 h-5 mr-2' />
                 Add Medication

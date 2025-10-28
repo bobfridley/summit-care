@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Mountain, X, Save } from 'lucide-react';
+import { Mountain, X, Save } from '@/components/icons';
 import GearEditor from './GearEditor';
 import PackWeightSummary from './PackWeightSummary';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 
 // shadcn/ui
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';

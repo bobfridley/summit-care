@@ -1,89 +1,26 @@
-name: Deploy (preview PR)
+name: Deploy (preview)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 concurrency:
-  group: preview-${{ github.event.pull_request.number || github.ref }}
+  group: deploy-preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  preview:
-    runs-on: ubuntu-latest
-    if: github.event.action != 'closed'
-    environment:
-      name: preview
-    steps:
-      - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add host to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-      - name: Smoke test SSH (verbose)
-        run: |
-          ssh -vvv "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" "echo ok" || true
-
-      - name: Deploy PR preview
-        env:
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          PREVIEWS_ROOT: /var/www/summit-care-previews
-          REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-          NODE_ENV: production
-        run: |
-          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
-            set -e
-            command -v pnpm >/dev/null 2>&1 || /usr/local/bin/corepack enable || true
-
-            APP_DIR=\"$PREVIEWS_ROOT/pr-$PR\"
-            PORT=\$((31000 + $PR))
-            PM2_NAME=\"summitcare-pr-$PR\"
-
-            if [ -d \"\$APP_DIR/.git\" ]; then
-              cd \"\$APP_DIR\"
-              git fetch --all --prune
-              git reset --hard origin/${{ github.head_ref || 'main' }}
-              git clean -fd
-            else
-              git clone https://github.com/$REPO \"\$APP_DIR\"
-              cd \"\$APP_DIR\"
-              git fetch origin \"pull/$PR/head:pr-$PR\"
-              git checkout pr-$PR
-            fi
-
-            pnpm install --frozen-lockfile || pnpm install
-            pnpm approve-builds esbuild sharp unrs-resolver || true
-
-            NODE_ENV=$NODE_ENV pnpm run build
-            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"\$PM2_NAME\" ) \
-              || pnpm dlx pm2 reload \"\$PM2_NAME\" \
-              || pnpm dlx pm2 start 'pnpm -- run start' --name \"\$PM2_NAME\" -- -p \"\$PORT\"
-          "
-
-  teardown:
-    runs-on: ubuntu-latest
-    if: github.event.action == 'closed'
-    steps:
-      - name: Remove PR preview
-        env:
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          PREVIEWS_ROOT: /var/www/summit-care-previews
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
-            set -e
-            APP_DIR=\"$PREVIEWS_ROOT/pr-$PR\"
-            PM2_NAME=\"summitcare-pr-$PR\"
-            pnpm dlx pm2 delete \"\$PM2_NAME\" || true
-            rm -rf \"\$APP_DIR\"
-          "
+  call-reusable:
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      envName: preview
+      url: https://srv1051247.hstgr.cloud/summit-care-preview
+      basePath: /summit-care-preview
+      pm2Name: summitcare-preview
+      port: 3002
+      isPreview: true
+      prNumber: ${{ github.event.pull_request.number }}
+    secrets:
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      APP_DIR: ${{ secrets.DEPLOY_PREVIEW_APP_DIR }}

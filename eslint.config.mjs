@@ -55,4 +55,11 @@ export default [
     files: ['**/*.{js,mjs,cjs}'],
     languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
   },
+
+  {
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'react/jsx-no-undef': ['error', { allowGlobals: false }],
+    },
+  },
 ];

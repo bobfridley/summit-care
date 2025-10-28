@@ -1,7 +1,7 @@
 // @ts-nocheck
 // src/components/NavLinks.tsx
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 /* ------------------------------------------------------------
    Helper: returns a preloading Link for any lazy page
@@ -15,7 +15,7 @@ function makePreloadLink(path: string, importer: () => Promise<unknown>, label?:
   return (
     <Link
       key={path}
-      to={path}
+      href={path}
       onMouseEnter={preload}
       className='hover:underline text-sm text-gray-700 dark:text-gray-300 transition-colors'
     >

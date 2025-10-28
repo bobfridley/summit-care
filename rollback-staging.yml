@@ -1,0 +1,40 @@
+name: Rollback (staging)
+
+on:
+  workflow_dispatch:
+    inputs:
+      targetRef:
+        description: 'Tag/commit/branch to roll back to'
+        required: true
+        type: string
+      lockAfter:
+        required: false
+        default: true
+        type: boolean
+      unlock:
+        required: false
+        default: false
+        type: boolean
+      skipBuild:
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  call-reusable:
+    uses: ./.github/workflows/reusable-rollback.yml
+    with:
+      envName: staging
+      envUrl: https://srv1051247.hstgr.cloud/summit-care-staging
+      basePath: /summit-care-staging
+      pm2Name: summitcare-staging
+      port: 3001
+      targetRef: ${{ inputs.targetRef }}
+      lockAfter: ${{ inputs.lockAfter }}
+      unlock: ${{ inputs.unlock }}
+      skipBuild: ${{ inputs.skipBuild }}
+    secrets:
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      APP_DIR: ${{ secrets.DEPLOY_STAGING_APP_DIR }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

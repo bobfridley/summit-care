@@ -2,77 +2,25 @@ name: Deploy (staging)
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
+  workflow_dispatch:
 
 concurrency:
   group: deploy-staging-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment: staging
-    env:
-      DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.STAGING_APP_DIR }}
-      NODE_ENV: production
-      PORT: 3001
-      PM2_NAME: summitcare-staging
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Validate env
-        run: |
-          for v in DEPLOY_USER DEPLOY_HOST APP_DIR; do
-            if [ -z "${!v}" ]; then echo "Missing $v"; exit 1; fi
-          done
-
-      - name: Add host to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-      - name: Smoke test SSH (verbose)
-        run: |
-          ssh -vvv "$DEPLOY_USER@$DEPLOY_HOST" "echo ok" || true
-
-      - name: Deploy to staging
-        run: |
-          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
-            set -e
-            command -v pnpm >/dev/null 2>&1 || /usr/local/bin/corepack enable || true
-
-            mkdir -p \"$APP_DIR\"
-            cd \"$APP_DIR\"
-
-            if [ -d .git ]; then
-              git fetch --all --prune
-              git reset --hard origin/main
-              git clean -fd
-            else
-              git clone https://github.com/${{ github.repository }} .
-              git reset --hard origin/main
-            fi
-
-            pnpm install --frozen-lockfile || pnpm install
-            pnpm approve-builds esbuild sharp unrs-resolver || true
-
-
-            BASE_PATH=/summit-care-staging NODE_ENV=$NODE_ENV pnpm run build
-
-            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
-              || pnpm dlx pm2 reload \"$PM2_NAME\" \
-              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p $PORT
-
-            pnpm dlx pm2 save || true
-          "
+  call-reusable:
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      envName: staging
+      url: https://srv1051247.hstgr.cloud/summit-care-staging
+      basePath: /summit-care-staging
+      pm2Name: summitcare-staging
+      port: 3001
+      branch: develop
+      isPreview: false
+    secrets:
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      APP_DIR: ${{ secrets.DEPLOY_STAGING_APP_DIR }}
