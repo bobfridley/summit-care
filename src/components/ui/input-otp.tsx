@@ -1,8 +1,8 @@
 // @ts-nocheck
 import * as React from 'react';
 import { OTPInputContext } from 'input-otp';
-import { OTPInput } from "input-otp"; // this is the rendered JSX tag in that file
-import { Minus } from "@/components/icons";
+import { OTPInput } from 'input-otp'; // this is the rendered JSX tag in that file
+import { Minus } from '@/components/icons';
 
 import { cn } from '@/lib/utils';
 

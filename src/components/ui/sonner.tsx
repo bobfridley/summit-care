@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client';
 import { useTheme } from 'next-themes';
-import { Toaster as Sonner } from "sonner";
+import { Toaster as Sonner } from 'sonner';
 // If your JSX tag is <Sonner .../>, this import matches that.
 // (Alternative is to rename the JSX to <Toaster .../> and import { Toaster } from "sonner")
 

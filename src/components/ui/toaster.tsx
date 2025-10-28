@@ -1,6 +1,13 @@
 // @ts-nocheck
 import { useToast } from '@/components/ui/use-toast';
-import { ToastProvider, Toast, ToastTitle, ToastDescription, ToastClose, ToastViewport } from "@/components/ui/toast";
+import {
+  ToastProvider,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+  ToastViewport,
+} from '@/components/ui/toast';
 
 export function Toaster() {
   const { toasts } = useToast();

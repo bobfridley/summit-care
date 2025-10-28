@@ -3,7 +3,7 @@
 import * as React from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { cva } from 'class-variance-authority';
-import { X } from "@/components/icons";
+import { X } from '@/components/icons';
 
 import { cn } from '@/lib/utils';
 

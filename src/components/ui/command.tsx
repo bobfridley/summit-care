@@ -1,8 +1,8 @@
 // @ts-nocheck
 import * as React from 'react';
 import { Command as CommandPrimitive } from 'cmdk';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Search } from "@/components/icons";
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Search } from '@/components/icons';
 
 import { cn } from '@/lib/utils';
 

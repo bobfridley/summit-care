@@ -2,7 +2,7 @@
 'use client';
 
 import * as ResizablePrimitive from 'react-resizable-panels';
-import { GripVertical } from "@/components/icons";
+import { GripVertical } from '@/components/icons';
 
 import { cn } from '@/lib/utils';
 

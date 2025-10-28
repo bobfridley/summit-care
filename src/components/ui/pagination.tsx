@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "@/components/icons";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from '@/components/icons';
 
 const Pagination = ({ className, ...props }) => (
   <nav
