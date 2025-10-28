@@ -1,4 +1,8 @@
 // @ts-nocheck
+import { DayPicker } from "react-day-picker";
+import { ChevronLeft, ChevronRight } from "@/components/icons";
+// also ensure you have the CSS for react-day-picker somewhere globally if needed
+// e.g., import "react-day-picker/dist/style.css"; (usually in _app.tsx or globals.css)
 
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';

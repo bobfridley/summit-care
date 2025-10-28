@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "@/components/icons";
 
 export default function DemoDisclaimer() {
   return (

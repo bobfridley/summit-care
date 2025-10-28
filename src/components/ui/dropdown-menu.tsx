@@ -1,6 +1,7 @@
 // @ts-nocheck
 import * as React from 'react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
+import { ChevronRight, Check, Circle } from "@/components/icons";
 
 import { cn } from '@/lib/utils';
 

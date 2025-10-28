@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Pill, Calendar, AlertTriangle, Edit, Trash2 } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
-
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MedicationList({ medications, isLoading, onEdit, onDelete }) {

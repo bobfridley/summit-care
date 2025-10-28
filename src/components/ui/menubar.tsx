@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import * as MenubarPrimitive from '@radix-ui/react-menubar';
+import { ChevronRight, Check, Circle } from "@/components/icons";
 
 import { cn } from '@/lib/utils';
 

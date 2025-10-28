@@ -1,1 +1,8 @@
-import '@testing-library/jest-dom'; // adds custom DOM matchers like toBeInTheDocument()
+import { defineConfig } from "vitest/config";
+export default defineConfig({
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./tests/setup.ts"],
+    css: false,
+  },
+});

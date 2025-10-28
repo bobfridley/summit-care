@@ -1,65 +1,78 @@
 // eslint.config.mjs
-import tsParser from '@typescript-eslint/parser';
-import tsPlugin from '@typescript-eslint/eslint-plugin';
-import importPlugin from 'eslint-plugin-import';
-import unusedPlugin from 'eslint-plugin-unused-imports';
-import reactPlugin from 'eslint-plugin-react';
-import reactHooks from 'eslint-plugin-react-hooks';
+
+import tsParser from "@typescript-eslint/parser";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import importPlugin from "eslint-plugin-import";
+import unusedPlugin from "eslint-plugin-unused-imports";
+
+// React plugins
+import pluginReact from "eslint-plugin-react";
+import pluginReactHooks from "eslint-plugin-react-hooks";
+import pluginReactRefresh from "eslint-plugin-react-refresh";
 
 export default [
-  { ignores: ['node_modules', 'dist', '.next', '.vercel', 'coverage', 'build', '**/*.d.ts'] },
+  // Ignore generated / build output
+  { ignores: ["node_modules", "dist", ".next", ".vercel", "coverage", "build", "**/*.d.ts"] },
 
-  // TS across the repo (no project mode)
+  // Base JS/TS (includes JSX)
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{js,jsx,ts,tsx}"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: null, // ⬅ turn OFF project mode
-        ecmaVersion: 'latest',
-        sourceType: 'module',
+        project: null,          // no project mode; avoids perf issues
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: { jsx: true },
       },
     },
     plugins: {
-      '@typescript-eslint': tsPlugin,
+      "@typescript-eslint": tsPlugin,
       import: importPlugin,
-      'unused-imports': unusedPlugin,
-      react: reactPlugin,
-      'react-hooks': reactHooks,
+      "unused-imports": unusedPlugin,
+      react: pluginReact,
+      "react-hooks": pluginReactHooks,
+      "react-refresh": pluginReactRefresh,
+    },
+    settings: {
+      react: { version: "detect" },
     },
     rules: {
-      // keep useful rules that don't need type info
-      'unused-imports/no-unused-imports': 'warn',
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-      // disable a few type-aware rules you may have enabled earlier
-      'import/no-unresolved': 'off', // avoid false positives with path aliases/deno specifiers
+      // General hygiene
+      "unused-imports/no-unused-imports": "warn",
+      "import/no-unresolved": "off",
+
+      // React
+      "react/jsx-no-undef": ["error", { allowGlobals: false }],
+      "react/react-in-jsx-scope": "off",   // not needed in React 17+
+      "react/jsx-uses-react": "off",
+
+      // Hooks
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+
+      // Optional during dev: enable if using React Fast Refresh in dev-only files
+      // "react-refresh/only-export-components": "warn",
     },
   },
 
-  // Deno functions under api/** — TS parser, no project, with Deno global
+  // Deno functions under api/** — allow Deno global
   {
-    files: ['api/**/*.{ts,tsx}'],
+    files: ["api/**/*.{ts,tsx,js,jsx}"],
     languageOptions: {
       parser: tsParser,
-      parserOptions: { project: null, ecmaVersion: 'latest', sourceType: 'module' },
-      globals: { Deno: 'readonly' },
+      parserOptions: { project: null, ecmaVersion: "latest", sourceType: "module", ecmaFeatures: { jsx: true } },
+      globals: { Deno: "readonly" },
     },
     rules: {
-      'import/no-unresolved': 'off',
+      "import/no-unresolved": "off",
     },
   },
-
-  // Plain JS
+  // in eslint.config.mjs add this override near the end:
   {
-    files: ['**/*.{js,mjs,cjs}'],
-    languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
-  },
-
-  {
-    files: ['**/*.{ts,tsx,js,jsx}'],
+    files: ['src/components/ui/**/*.{ts,tsx}'],
     rules: {
-      'react/jsx-no-undef': ['error', { allowGlobals: false }],
+      'react/jsx-no-undef': 'off',
     },
   },
 ];

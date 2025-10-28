@@ -1,5 +1,5 @@
 // @ts-nocheck
-
+import { Scale } from "@/components/icons";
 export default function PackWeightSummary({ gear = [], basePackWeightKg = 0 }) {
   const KG_TO_LB = 2.20462;
 
