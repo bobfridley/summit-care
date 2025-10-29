@@ -1,0 +1,77 @@
+name: '🚀 Deployment Issue'
+description: 'Report or track issues with SummitCare deployments or CI/CD environments'
+title: '🚀 [Deployment] <brief summary>'
+labels: ['ci/cd', 'deployment']
+assignees: ['bobfridley']
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🧩 Deployment Context
+        Please provide key details below to help troubleshoot or document this deployment issue.
+
+  - type: input
+    id: environment
+    attributes:
+      label: '🌎 Environment'
+      description: 'Which environment is affected?'
+      placeholder: 'production | staging | preview'
+    validations:
+      required: true
+
+  - type: input
+    id: workflow
+    attributes:
+      label: '⚙️ Workflow'
+      description: 'Which workflow or file was running when the issue occurred?'
+      placeholder: '.github/workflows/reusable-deploy.yml'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: '🔥 Severity'
+      description: 'How severe is the issue?'
+      options:
+        - Low – minor configuration or cosmetic issue
+        - Medium – deploy failed but rollback succeeded
+        - High – production deploy blocked or system down
+      default: 1
+
+  - type: textarea
+    id: error_logs
+    attributes:
+      label: '🧱 Error Logs'
+      description: 'Paste the relevant error logs or GitHub Actions output here.'
+      render: shell
+      placeholder: |
+        Permission denied (publickey)
+        Error: Host key verification failed.
+      validations:
+        required: true
+
+  - type: textarea
+    id: attempted_fixes
+    attributes:
+      label: '🛠️ Attempted Fixes'
+      description: 'What have you tried so far?'
+      placeholder: 'Regenerated SSH key, verified GitHub secrets, re-ran deploy...'
+
+  - type: textarea
+    id: expected_outcome
+    attributes:
+      label: '🎯 Expected Outcome'
+      description: 'What did you expect to happen?'
+      placeholder: 'Deployment should complete successfully with PM2 restarted.'
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: '🧾 Pre-Submission Checklist'
+      options:
+        - label: 'Secrets verified in Settings → Actions → Secrets and variables'
+        - label: 'Host key tested manually using `ssh -p 22 user@host`'
+        - label: 'CI logs reviewed for missing variables or syntax issues'
+        - label: 'Verified SSH_PRIVATE_KEY has correct permissions and format'
