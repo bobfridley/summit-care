@@ -42,6 +42,10 @@ on:
         required: true
       APP_DIR:
         required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SSH_PORT:
+        required: false
       KNOWN_HOSTS:
         required: false # optional; we will auto-scan if not provided
 
@@ -58,11 +62,19 @@ jobs:
       - name: Checkout (no artifacts used; safe to skip)
         uses: actions/checkout@v4
 
+      # Requires repo secret: SSH_PRIVATE_KEY (PEM), typically an ed25519 key
+      - name: Add deploy key to ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
       # 🛡️ Host key install with runtime fallback
       - name: Install pinned SSH host key (or fallback to ssh-keyscan)
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
           set -e
           mkdir -p ~/.ssh
@@ -72,30 +84,51 @@ jobs:
             printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
             echo "✅ Wrote KNOWN_HOSTS secret to ~/.ssh/known_hosts"
           else
-            echo "⚠️ KNOWN_HOSTS secret not set — falling back to ssh-keyscan"
-            # Collect ED25519 first (preferred), then RSA as backup
-            (ssh-keyscan -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
-            (ssh-keyscan -t rsa "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            echo "⚠️ KNOWN_HOSTS not set — using ssh-keyscan"
+            if [ -n "$SSH_PORT" ]; then
+              (ssh-keyscan -p "$SSH_PORT" -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+              (ssh-keyscan -p "$SSH_PORT" -t rsa "$DEPLOY_HOST" 2>/dev/null || true)     >> ~/.ssh/known_hosts
+            else
+              (ssh-keyscan -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+              (ssh-keyscan -t rsa "$DEPLOY_HOST" 2>/dev/null || true)     >> ~/.ssh/known_hosts
+            fi
             echo "✅ Captured host keys via ssh-keyscan"
           fi
 
           chmod 600 ~/.ssh/known_hosts
+
+      - name: Sanity SSH
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "echo 'SSH OK:' \$(whoami) '@' \$(hostname); uname -a"
 
       - name: Deploy to remote host
         env:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           APP_DIR: ${{ secrets.APP_DIR }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
           NODE_ENV: production
           BASE_PATH: ${{ inputs.basePath }}
           PM2_NAME: ${{ inputs.pm2Name }}
-          PORT: ${{ inputs.port }}
+          PORT: ${{ inputs.port }} # ✅ use app port input, not SSH port
           IS_PREVIEW: ${{ inputs.isPreview }}
           BRANCH: ${{ inputs.branch }}
           PR_NUMBER: ${{ inputs.prNumber }}
         run: |
           set -e
-          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then
+            SSH_OPTS="$SSH_OPTS -p $SSH_PORT"
+          fi
+
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "
             set -e
             command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.19.0 --activate)
 
