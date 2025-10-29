@@ -61,6 +61,8 @@ jobs:
       # but harmless to keep in most repos.
       - name: Checkout (no artifacts used; safe to skip)
         uses: actions/checkout@v4
+        with:
+          set-safe-directory: '*'
 
       # Requires repo secret: SSH_PRIVATE_KEY (PEM), typically an ed25519 key
       - name: Add deploy key to ssh-agent

@@ -1,0 +1,79 @@
+name: '🌄 Feature Request'
+description: 'Propose a new feature or enhancement for SummitCare'
+title: '🌄 [Feature] <short summary>'
+labels: ['enhancement', 'feature-request']
+assignees: ['bobfridley']
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🏔️ Feature Overview
+        Thanks for contributing to SummitCare! Please describe your idea clearly and provide relevant details so we can plan and track it effectively.
+
+  - type: input
+    id: summary
+    attributes:
+      label: '🧩 Summary'
+      description: 'Briefly describe what this feature does.'
+      placeholder: 'Add hydration dashboard to track electrolyte balance.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: '🎯 Motivation / Use Case'
+      description: 'Why is this feature needed? What problem does it solve?'
+      placeholder: 'Helps climbers with COPD track hydration and electrolyte levels more effectively.'
+
+  - type: textarea
+    id: details
+    attributes:
+      label: '🧠 Feature Details'
+      description: 'Outline the behavior, API, or UI design.'
+      placeholder: |
+        - Add new page at /hydration
+        - Integrate with hydration products API
+        - Display daily intake chart
+        - Include tips for fluid balance at altitude
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: '⚡ Priority'
+      description: 'How important is this feature?'
+      options:
+        - High – required for next release
+        - Medium – nice to have soon
+        - Low – future roadmap idea
+      default: 2
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: '✅ Acceptance Criteria'
+      description: 'List measurable outcomes or success conditions.'
+      placeholder: |
+        - [ ] Hydration page loads in under 2 seconds
+        - [ ] Data persists across user sessions
+        - [ ] Daily summary chart updates dynamically
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: '🔗 Dependencies'
+      description: 'Mention related issues, APIs, or libraries.'
+      placeholder: "#42 (Add hydration API) or 'openFDA electrolyte data source'"
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **Commit Guidance:**  
+        - Use **GPG-signed commits** (`git commit -S`)  
+        - Follow **Conventional Commits** (`feat:`, `fix:`, `ci:`, `docs:`)  
+        - Example:  
+          ```bash
+          git commit -S -m "feat(hydration): add hydration dashboard with daily summary chart"
+          ```
