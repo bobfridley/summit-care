@@ -1,0 +1,73 @@
+name: '📝 Documentation Update'
+description: 'Request or track documentation changes for SummitCare'
+title: '📝 [Docs] <short summary>'
+labels: ['documentation', 'docs']
+assignees: ['bobfridley']
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🧭 Documentation Context
+        Use this template to propose, track, or review updates to documentation, guides, or configuration files.
+
+  - type: dropdown
+    id: doc_scope
+    attributes:
+      label: '📚 Scope'
+      description: 'Which type of documentation does this affect?'
+      options:
+        - README.md
+        - .env.example
+        - Deployment Guide
+        - API Reference
+        - Code Comments / Inline Docs
+        - Other
+      default: 0
+
+  - type: input
+    id: files
+    attributes:
+      label: '📁 Files or Sections Affected'
+      description: 'List specific files, sections, or URLs that need changes.'
+      placeholder: 'README.md → CI/CD section, reusable-deploy.yml setup notes'
+    validations:
+      required: true
+
+  - type: textarea
+    id: changes
+    attributes:
+      label: '🧩 Proposed Changes'
+      description: 'Describe what needs to be added, removed, or updated.'
+      placeholder: |
+        - Add instructions for setting SSH_PRIVATE_KEY secret
+        - Include test badge in README
+        - Clarify port configuration in reusable-deploy.yml
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: '🎯 Reason for Change'
+      description: 'Explain why this update is needed.'
+      placeholder: 'To make onboarding easier for new contributors and ensure CI setup is consistent.'
+
+  - type: textarea
+    id: preview
+    attributes:
+      label: '👀 Preview (optional)'
+      description: 'Paste or describe what the updated section will look like.'
+      placeholder: 'Example: Markdown snippet for improved README badges'
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **Commit Guidance:**  
+        - Use signed commits (`git commit -S`)  
+        - Follow Conventional Commits style (`docs:` prefix)  
+        - Example:  
+          ```bash
+          git commit -S -m "docs(readme): add test badge and SSH key setup section"
+          ```
+
+        ✅ Tip: Run `pnpm lint:fix && pnpm format` before committing to keep Markdown tidy.
