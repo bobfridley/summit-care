@@ -20,6 +20,9 @@ jobs:
         with:
           set-safe-directory: '*'
 
+      - name: Add safe directory for Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9

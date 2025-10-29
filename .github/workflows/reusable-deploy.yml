@@ -64,6 +64,9 @@ jobs:
         with:
           set-safe-directory: '*'
 
+      - name: Add safe directory for Git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       # Requires repo secret: SSH_PRIVATE_KEY (PEM), typically an ed25519 key
       - name: Add deploy key to ssh-agent
         uses: webfactory/ssh-agent@v0.9.0
