@@ -24,3 +24,4 @@ jobs:
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       APP_DIR: ${{ secrets.DEPLOY_STAGING_APP_DIR }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
