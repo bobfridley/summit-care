@@ -1,0 +1,36 @@
+# .github/labels.yml
+- name: env:prod
+  color: FD7E14
+  description: Production environment
+- name: env:staging
+  color: 6F42C1
+  description: Staging environment
+- name: env:preview
+  color: 0366D6
+  description: Preview PR deploy environment
+- name: env:local
+  color: 2CBE4E
+  description: Local dev environment
+
+- name: priority:p0
+  color: D93F0B
+  description: Critical—blocking or outage
+- name: priority:p1
+  color: FBCA04
+  description: High—should address soon
+- name: priority:p2
+  color: 0E8A16
+  description: Medium—normal priority
+- name: priority:p3
+  color: BFDADC
+  description: Low—nice to have
+
+- name: needs-triage
+  color: 5319E7
+  description: Awaiting triage
+- name: needs-repro
+  color: 1D76DB
+  description: Needs reproduction steps/data
+- name: needs-logs
+  color: C2E0C6
+  description: Needs logs/screenshots

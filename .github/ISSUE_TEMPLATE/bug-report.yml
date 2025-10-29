@@ -1,0 +1,160 @@
+name: '🐞 Bug Report'
+description: 'Something broke or behaves unexpectedly'
+title: '🐞 [Bug] <short summary>'
+labels: ['bug', 'needs-triage']
+assignees: ['bobfridley']
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please include as much detail as you can.
+        Tip: redact secrets (tokens, passwords, DB creds).
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: '🧾 Summary'
+      description: 'What’s wrong, in one or two sentences?'
+      placeholder: "Clicking 'Save' on Medications throws 500 in staging"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: '🔁 Steps to Reproduce'
+      description: 'Numbered steps work best.'
+      placeholder: |
+        1. Go to /Medications
+        2. Click 'Add Medication'
+        3. Enter required fields
+        4. Click 'Save'
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: '✅ Expected Behavior'
+      placeholder: 'Medication is saved and success toast appears'
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: '❌ Actual Behavior'
+      placeholder: 'Page stays loading for ~5s then shows generic error'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: '🚨 Severity'
+      options:
+        - S1 – Production outage / data loss
+        - S2 – Major feature broken / no workaround
+        - S3 – Degraded / workaround exists
+        - S4 – Minor / cosmetic
+      default: 2
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: regression
+    attributes:
+      label: '↩️ Regression?'
+      options:
+        - label: 'Began after a recent change'
+        - label: 'Has existed for a while'
+
+  - type: input
+    id: affected_routes
+    attributes:
+      label: '🧭 Affected Routes / Pages'
+      placeholder: '/Medications, /Climbs, API: /api/user_medications'
+
+  - type: input
+    id: components
+    attributes:
+      label: '🧩 Affected Components'
+      placeholder: 'MedicationForm.tsx, MedicationList.tsx, api/user_medications/route.ts'
+
+  - type: input
+    id: db_tables
+    attributes:
+      label: '🗄️ Related DB Tables'
+      placeholder: 'user_medications, user_climbs'
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: '📜 Logs / Console Output'
+      description: 'Paste relevant server logs, build output, or browser console (redact secrets).'
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: '🖼️ Screenshots / Screen recording (optional)'
+      description: 'Drag & drop images or link to a short recording (e.g., Loom).'
+
+  - type: dropdown
+    id: env
+    attributes:
+      label: '🌎 Environment'
+      options:
+        - Production
+        - Staging
+        - Preview
+        - Local
+      default: 3
+    validations:
+      required: true
+
+  - type: input
+    id: build_info
+    attributes:
+      label: '🏗️ Build / Commit'
+      placeholder: 'Git SHA, PR #, or tag (e.g., 9f2a1c3, PR#42)'
+
+  - type: input
+    id: browser_os
+    attributes:
+      label: '🖥️ Browser / OS (if UI)'
+      placeholder: 'Chrome 141, macOS 12.7.6'
+
+  - type: input
+    id: feature_flags
+    attributes:
+      label: '🧪 Feature Flags (if any)'
+      placeholder: 'ENABLE_EDGE_API=true'
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: '🧰 Minimal Reproduction (optional)'
+      description: 'Link to branch, PR, or code snippet that reproduces the issue.'
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: '✅ Checklist'
+      options:
+        - label: 'I searched existing issues'
+          required: true
+        - label: 'I can reproduce this on latest main/develop'
+        - label: 'I included logs and exact steps'
+        - label: 'This does not expose secrets'
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **Commit Guidance (Signed):**
+        Use Conventional Commits and sign with `-S`.
+        ```bash
+        git commit -S -m "fix(medications): handle null dose on save (S2 regression)"
+        ```

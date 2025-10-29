@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 SummitCare Docs
+    url: https://srv1051247.hstgr.cloud/summit-care/Docs
+    about: Read deployment and environment setup notes
+  - name: 🚀 CI/CD Status
+    url: https://github.com/bobfridley/summit-care/actions
+    about: Check workflow runs and logs
