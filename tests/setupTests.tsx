@@ -17,11 +17,7 @@ vi.mock('next/link', () => {
       ref
     ) {
       return (
-        <a
-          href={typeof href === 'string' ? href : href?.pathname ?? '#'}
-          ref={ref}
-          {...props}
-        >
+        <a href={typeof href === 'string' ? href : (href?.pathname ?? '#')} ref={ref} {...props}>
           {children}
         </a>
       );
