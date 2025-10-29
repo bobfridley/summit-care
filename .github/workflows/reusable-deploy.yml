@@ -42,6 +42,8 @@ on:
         required: true
       APP_DIR:
         required: true
+      KNOWN_HOSTS:
+        required: false # optional; we will auto-scan if not provided
 
 jobs:
   deploy:
@@ -49,7 +51,36 @@ jobs:
     environment:
       name: ${{ inputs.envName }}
       url: ${{ inputs.url }}
+
     steps:
+      # Not strictly required since we deploy via SSH pulling from GitHub,
+      # but harmless to keep in most repos.
+      - name: Checkout (no artifacts used; safe to skip)
+        uses: actions/checkout@v4
+
+      # 🛡️ Host key install with runtime fallback
+      - name: Install pinned SSH host key (or fallback to ssh-keyscan)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+            echo "✅ Wrote KNOWN_HOSTS secret to ~/.ssh/known_hosts"
+          else
+            echo "⚠️ KNOWN_HOSTS secret not set — falling back to ssh-keyscan"
+            # Collect ED25519 first (preferred), then RSA as backup
+            (ssh-keyscan -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            (ssh-keyscan -t rsa "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            echo "✅ Captured host keys via ssh-keyscan"
+          fi
+
+          chmod 600 ~/.ssh/known_hosts
+
       - name: Deploy to remote host
         env:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
