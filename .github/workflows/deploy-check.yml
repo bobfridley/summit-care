@@ -1,0 +1,121 @@
+name: Deploy (dry-run check)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which environment?'
+        type: choice
+        required: true
+        options: [production, staging, preview]
+        default: production
+
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+
+    # Map chosen target to the correct environment URL (optional)
+    environment:
+      name: ${{ github.event.inputs.target }}
+
+    steps:
+      - name: Checkout (not used, but harmless)
+        uses: actions/checkout@v4
+
+      - name: Add deploy key to ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Install SSH known_hosts (or fallback to ssh-keyscan)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+            echo "✅ Wrote KNOWN_HOSTS secret"
+          else
+            echo "⚠️ KNOWN_HOSTS not set — using ssh-keyscan"
+            if [ -n "$SSH_PORT" ]; then
+              (ssh-keyscan -p "$SSH_PORT" -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+              (ssh-keyscan -p "$SSH_PORT" -t rsa     "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            else
+              (ssh-keyscan -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+              (ssh-keyscan -t rsa     "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            fi
+            echo "✅ Captured host keys via ssh-keyscan"
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Sanity SSH
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "echo 'SSH OK:' \$(whoami) '@' \$(hostname); uname -a"
+
+      - name: Dry-run ownership & git safety check (no build)
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
+
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            echo '🔎 Dry-run preflight on' \$(hostname)
+            mkdir -p \"$APP_DIR\"
+            ls -ld \"$APP_DIR\" || true
+
+            # Robust stat guard
+            if command -v stat >/dev/null 2>&1; then
+              CURR_OWNER=\$(stat -c '%U' \"$APP_DIR\" 2>/dev/null || echo unknown)
+              CURR_GROUP=\$(stat -c '%G' \"$APP_DIR\" 2>/dev/null || echo unknown)
+            else
+              echo '⚠️ stat not available — using write test'
+              if [ -w \"$APP_DIR\" ]; then
+                CURR_OWNER=\"$DEPLOY_USER\"; CURR_GROUP=\"$DEPLOY_USER\"
+              else
+                CURR_OWNER=unknown; CURR_GROUP=unknown
+              fi
+            fi
+            echo \"Current owner: \$CURR_OWNER:\$CURR_GROUP\"
+
+            # Try to auto-fix with sudo if needed
+            if [ \"\$CURR_OWNER\" != \"$DEPLOY_USER\" ]; then
+              echo '🛠  Ownership mismatch; attempting sudo chown (dry-run real command)'
+              if command -v sudo >/dev/null 2>&1; then
+                if sudo -n true 2>/dev/null; then
+                  sudo chown -R \"$DEPLOY_USER\":\"$DEPLOY_USER\" \"$APP_DIR\" || true
+                  echo 'ℹ️ chown attempted (no error means success).'
+                else
+                  echo '❌ sudo requires password or is not permitted for this command.'
+                fi
+              else
+                echo '❌ sudo not available.'
+              fi
+            else
+              echo '✅ Ownership OK'
+            fi
+
+            # Mark repo path safe for git
+            git config --global --add safe.directory \"$APP_DIR\" || true
+            echo 'safe.directory entries:'
+            git config --get-all safe.directory || true
+
+            echo '✅ Dry-run complete (no clone, no build, no PM2).'
+          "

@@ -1,82 +1,211 @@
-- name: Deploy to remote host
-  env:
-    DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-    DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-    APP_DIR: ${{ secrets.APP_DIR }}
-    SSH_PORT: ${{ secrets.SSH_PORT }}
-    NODE_ENV: production
-    BASE_PATH: ${{ inputs.basePath }}
-    PM2_NAME: ${{ inputs.pm2Name }}
-    PORT: ${{ inputs.port }}
-    IS_PREVIEW: ${{ inputs.isPreview }}
-    BRANCH: ${{ inputs.branch }}
-    PR_NUMBER: ${{ inputs.prNumber }}
-  run: |
-    set -e
-    SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
-    if [ -n "$SSH_PORT" ]; then
-      SSH_OPTS="$SSH_OPTS -p $SSH_PORT"
-    fi
+name: Reusable Deploy
 
-    ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "
-      set -e
-      echo '🧩 Running deployment sanity checks...'
-      mkdir -p \"$APP_DIR\"
+on:
+  workflow_call:
+    inputs:
+      envName:
+        description: 'Environment name (production|staging|preview)'
+        required: true
+        type: string
+      url:
+        description: 'Public URL for this environment'
+        required: true
+        type: string
+      basePath:
+        description: 'Next.js basePath (e.g. /summit-care)'
+        required: true
+        type: string
+      pm2Name:
+        description: 'PM2 process name'
+        required: true
+        type: string
+      port:
+        description: 'Port for Next.js server (e.g. 3000)'
+        required: true
+        type: number
+      branch:
+        description: 'Git branch to deploy (main|develop). Omit for preview.'
+        required: false
+        type: string
+      isPreview:
+        description: 'Is this a preview deployment?'
+        required: true
+        type: boolean
+      prNumber:
+        description: 'Pull request number (only for preview)'
+        required: false
+        type: number
+      dryRun:
+        description: 'Run deploy script without build or pm2 reload'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      DEPLOY_USER:
+        required: true
+      DEPLOY_HOST:
+        required: true
+      APP_DIR:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SSH_PORT:
+        required: false
+      KNOWN_HOSTS:
+        required: false
 
-      # --- Ownership sanity check ---
-      echo 'Checking ownership and permissions:'
-      ls -ld \"$APP_DIR\" || true
-      stat -c '%U:%G %a %n' \"$APP_DIR\" || true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.envName }}
+      url: ${{ inputs.url }}
 
-      # --- Mark repo as safe for git ---
-      echo 'Configuring Git safe.directory...'
-      git config --global --add safe.directory \"$APP_DIR\"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # --- Validate that Git trusts it ---
-      echo 'Verifying safe.directory setting:'
-      git config --get-all safe.directory || true
+      - name: Add deploy key to ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # --- Ensure pnpm is active ---
-      command -v pnpm >/dev/null 2>&1 || (
-        command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true
-        corepack enable && corepack prepare pnpm@10.19.0 --activate
-      )
+      - name: Install SSH known_hosts (or fallback to ssh-keyscan)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+            echo "✅ Wrote KNOWN_HOSTS secret"
+          else
+            echo "⚠️ KNOWN_HOSTS not set — using ssh-keyscan"
+            if [ -n "$SSH_PORT" ]; then
+              (ssh-keyscan -p "$SSH_PORT" -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+              (ssh-keyscan -p "$SSH_PORT" -t rsa     "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            else
+              (ssh-keyscan -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+              (ssh-keyscan -t rsa     "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            fi
+            echo "✅ Captured host keys via ssh-keyscan"
+          fi
+          chmod 600 ~/.ssh/known_hosts
 
-      cd \"$APP_DIR\"
+      - name: Sanity SSH
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "echo 'SSH OK:' \$(whoami) '@' \$(hostname); uname -a"
 
-      if [ -d .git ]; then
-        echo '🔁 Existing git repo found — fetching updates...'
-        git fetch --all --prune
-        if [ \"$IS_PREVIEW\" = \"true\" ] && [ -n \"$PR_NUMBER\" ]; then
-          git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
-          git checkout pr-$PR_NUMBER
-        else
-          git reset --hard origin/${BRANCH:-main}
-          git clean -fd
-        fi
-      else
-        echo '🧱 Cloning repository fresh...'
-        git clone https://github.com/bobfridley/summit-care .
-        if [ \"$IS_PREVIEW\" = \"true\" ] && [ -n \"$PR_NUMBER\" ]; then
-          git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
-          git checkout pr-$PR_NUMBER
-        else
-          git reset --hard origin/${BRANCH:-main}
-        fi
-      fi
+      - name: Deploy to remote host (respects dryRun)
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          NODE_ENV: production
+          BASE_PATH: ${{ inputs.basePath }}
+          PM2_NAME: ${{ inputs.pm2Name }}
+          PORT: ${{ inputs.port }}
+          IS_PREVIEW: ${{ inputs.isPreview }}
+          BRANCH: ${{ inputs.branch }}
+          PR_NUMBER: ${{ inputs.prNumber }}
+          DRY_RUN: ${{ inputs.dryRun }}
+        run: |
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
 
-      echo '📦 Installing dependencies...'
-      pnpm install --frozen-lockfile || pnpm install
-      pnpm ignored-builds || true
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            echo '🌐 Host:' \$(hostname)
+            echo '👤 Effective user:' \$(whoami)
+            echo '📁 App dir: $APP_DIR'
+            mkdir -p \"$APP_DIR\"
+            ls -ld \"$APP_DIR\" || true
 
-      echo '🏗️ Building project...'
-      BASE_PATH=\"$BASE_PATH\" NODE_ENV=\"$NODE_ENV\" pnpm run build
+            # Ownership check (best effort)
+            if command -v stat >/dev/null 2>&1; then
+              CURR_OWNER=\$(stat -c '%U' \"$APP_DIR\" 2>/dev/null || echo unknown)
+              CURR_GROUP=\$(stat -c '%G' \"$APP_DIR\" 2>/dev/null || echo unknown)
+            else
+              if [ -w \"$APP_DIR\" ]; then CURR_OWNER=\$(whoami); CURR_GROUP=\$(id -gn); else CURR_OWNER=unknown; CURR_GROUP=unknown; fi
+            fi
+            echo \"🧾 Owner: \$CURR_OWNER:\$CURR_GROUP\"
 
-      echo '🚀 Restarting app with PM2...'
-      ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
-        || pnpm dlx pm2 reload \"$PM2_NAME\" \
-        || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p \"$PORT\"
+            # Mark repo path safe for git (pre-empt 'dubious ownership')
+            git config --global --add safe.directory \"$APP_DIR\" || true
 
-      pnpm dlx pm2 save || true
-      echo '✅ Deployment complete!'
-    "
+            if [ \"$DRY_RUN\" = \"true\" ]; then
+              echo '🧪 DRY RUN: skipping git/pnpm/pm2 steps'
+              echo '---- STATUS ----'
+              command -v node   >/dev/null 2>&1 && node -v    || echo 'node not found'
+              command -v pnpm   >/dev/null 2>&1 && pnpm -v    || echo 'pnpm not found'
+              command -v pm2    >/dev/null 2>&1 && pm2 -v     || echo 'pm2 not found'
+              echo 'Disk:'
+              df -h \"$APP_DIR\" || df -h
+              echo 'Free inode:'
+              df -i \"$APP_DIR\" || true
+              echo 'Whoami/pwd:'
+              whoami; pwd
+              echo 'Known git safe.directory entries:'
+              git config --get-all safe.directory || true
+              echo '✅ Dry-run complete.'
+              exit 0
+            fi
+
+            # ----- REAL DEPLOY -----
+            command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.19.0 --activate)
+
+            cd \"$APP_DIR\"
+            if [ -d .git ]; then
+              git fetch --all --prune
+              if [ \"$IS_PREVIEW\" = \"true\" ] && [ -n \"$PR_NUMBER\" ]; then
+                git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
+                git checkout pr-$PR_NUMBER
+              else
+                git reset --hard origin/${BRANCH:-main}
+                git clean -fd
+              fi
+            else
+              git clone https://github.com/bobfridley/summit-care .
+              if [ \"$IS_PREVIEW\" = \"true\" ] && [ -n \"$PR_NUMBER\" ]; then
+                git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
+                git checkout pr-$PR_NUMBER
+              else
+                git reset --hard origin/${BRANCH:-main}
+              fi
+            fi
+
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm ignored-builds || true
+
+            BASE_PATH=\"$BASE_PATH\" NODE_ENV=\"$NODE_ENV\" pnpm run build
+
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
+              || pnpm dlx pm2 reload \"$PM2_NAME\" \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p \"$PORT\"
+
+            pnpm dlx pm2 save || true
+          "
+
+      - name: Deployment status
+        if: always()
+        run: |
+          echo ""
+          echo "📦 Deployment Summary"
+          echo "Environment: ${{ inputs.envName }}"
+          echo "Host:        ${{ secrets.DEPLOY_HOST }}"
+          echo "App Dir:     ${{ secrets.APP_DIR }}"
+          echo "Dry Run:     ${{ inputs.dryRun }}"
+          echo "✅ Completed at: $(date -u)"

@@ -20,8 +20,9 @@ jobs:
       port: 3001
       branch: develop
       isPreview: false
+      dryRun: true # set to false for real deploys
     secrets:
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.DEPLOY_STAGING_APP_DIR }}
+      APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}

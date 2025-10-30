@@ -22,6 +22,7 @@ jobs:
       port: 3000
       branch: main
       isPreview: false
+      dryRun: false # set to false for real deploys
     secrets:
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
