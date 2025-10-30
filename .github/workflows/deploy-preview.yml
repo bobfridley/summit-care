@@ -20,9 +20,11 @@ jobs:
       port: 3002
       isPreview: true
       prNumber: ${{ github.event.pull_request.number }}
-      dryRun: false # set to false for real deploys
+      dryRun: false
     secrets:
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
+      APP_DIR: ${{ secrets.PREVIEW_DEPLOY_APP_DIR }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
