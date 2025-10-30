@@ -17,7 +17,7 @@ jobs:
           set-safe-directory: '*'
 
       - name: Add safe directory for Git
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        run: git config --global --add safe.directory \"$APP_DIR\"
 
       - name: Setup Node.js and pnpm
         uses: pnpm/action-setup@v4

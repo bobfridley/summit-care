@@ -21,7 +21,7 @@ jobs:
           set-safe-directory: '*'
 
       - name: Add safe directory for Git
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        run: git config --global --add safe.directory \"$APP_DIR\"
 
       - uses: pnpm/action-setup@v4
         with:
