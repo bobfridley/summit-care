@@ -12,10 +12,8 @@ import {
 } from '@/components/ui/select';
 
 // UI
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'; // or "@/components/ui/Card"
-import { Button } from '@/components/ui/button'; // or "@/components/ui/Button"
-// or "@/components/ui/Input"
-// or "@/components/ui/Label"
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 import {
   summitCareMarkColor,

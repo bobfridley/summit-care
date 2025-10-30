@@ -1,10 +1,14 @@
-// @ts-nocheck // ← remove this line later once everything compiles cleanly
+// src/components/climbs/ClimbCard.tsx
 import React from 'react';
-import { format } from 'date-fns';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { format } from 'date-fns';
 
+// shadcn/ui
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+
+// icons & utils
 import {
   Mountain,
   MapPin,
@@ -19,41 +23,14 @@ import {
 } from '@/components/icons';
 import { createPageUrl } from '@/utils';
 
-// shadcn/ui
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-
 // local components
 import GearList from './GearList';
 import PackWeightSummary from './PackWeightSummary';
-
-// If you already have a shared Climb type, you can import it instead.
-// import type { Climb as ClimbDTO } from '@/shared/type';
+import type { ClimbLike } from '@/types';
 
 type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'extreme';
 type ClimbStatus = 'planning' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
 type ClimbingStyle = 'day_hike' | 'overnight' | 'multi_day' | 'expedition' | 'technical_climb';
-
-export interface ClimbLike {
-  id: number;
-  mountain_name: string;
-  elevation: number;
-  planned_start_date: string | Date;
-  status: ClimbStatus;
-  difficulty_level: DifficultyLevel;
-  climbing_style: ClimbingStyle;
-
-  location?: string | null;
-  duration_days?: number | null;
-  group_size?: number | null;
-  notes?: string | null;
-  weather_concerns?: string | null;
-
-  // gear
-  required_gear?: unknown[] | null;
-  base_pack_weight_kg?: number | null;
-}
 
 export interface ClimbCardProps {
   climb: ClimbLike;
@@ -106,7 +83,6 @@ export default function ClimbCard({ climb, onEdit, onDelete }: ClimbCardProps) {
 
   const elevationRisk = getElevationRisk(climb.elevation);
 
-  // normalize date
   const startDate =
     typeof climb.planned_start_date === 'string'
       ? new Date(climb.planned_start_date)
@@ -129,7 +105,7 @@ export default function ClimbCard({ climb, onEdit, onDelete }: ClimbCardProps) {
             )}
           </div>
           <div className='flex items-center gap-2'>
-            <Link href={createPageUrl('ClimbGear', { climbId: c.id })}>
+            <Link href={createPageUrl('ClimbGear', { climbId: climb.id })}>
               <Button
                 variant='outline'
                 size='sm'
@@ -231,12 +207,10 @@ export default function ClimbCard({ climb, onEdit, onDelete }: ClimbCardProps) {
         {Array.isArray(climb.required_gear) && climb.required_gear.length > 0 && (
           <div className='pt-2 border-t border-stone-100 space-y-3'>
             <PackWeightSummary
-              gear={formData.required_gear as any[]} // <- same cast here
-              basePackWeightKg={
-                formData.base_pack_weight_kg === '' ? 0 : formData.base_pack_weight_kg
-              }
+              gear={climb.required_gear ?? []}
+              basePackWeightKg={climb.base_pack_weight_kg ?? 0}
             />
-            <GearList gear={climb.required_gear as unknown[]} />
+            <GearList gear={climb.required_gear ?? []} />
           </div>
         )}
       </CardContent>

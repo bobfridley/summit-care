@@ -660,7 +660,7 @@ export default function ClimbGear() {
                       <div className='text-sm text-text-secondary'>
                         {(c.elevation || 0).toLocaleString()} ft
                       </div>
-                      <Link href={createPageUrl('ClimbGear', { climbId: c.id })}>
+                      <Link href={createPageUrl('ClimbGear', { climbId: climb.id })}>
                         <Button className='mountain-gradient hover:opacity-90 transition-opacity'>
                           Manage Gear
                         </Button>

@@ -1,27 +1,6 @@
 import React from 'react';
 import { ListChecks } from '@/components/icons';
-
-type GearCategory =
-  | 'safety'
-  | 'clothing'
-  | 'technical'
-  | 'camping'
-  | 'navigation'
-  | 'health'
-  | 'food_water'
-  | 'other';
-
-type Importance = 'critical' | 'high' | 'recommended' | 'optional';
-
-export interface GearItem {
-  item_name: string;
-  required?: boolean | 0 | 1 | null;
-  importance?: Importance | null;
-  category?: GearCategory | null;
-  notes?: string | null;
-  estimated_weight_kg?: number | null;
-  quantity?: number | null;
-}
+import type { GearItem, Importance, GearCategory } from '@/types';
 
 export interface GearListProps {
   gear?: GearItem[];
@@ -49,7 +28,6 @@ export default function GearList({ gear = [] }: GearListProps) {
   const KG_TO_LB = 2.20462;
 
   const requiredItems = (gear ?? []).filter((g) => !!g?.required && !!g?.item_name);
-
   if (requiredItems.length === 0) return null;
 
   const totalEstimatedWeightKg = requiredItems.reduce((sum, item) => {
@@ -80,7 +58,9 @@ export default function GearList({ gear = [] }: GearListProps) {
           const perItemLb = perItemKg * KG_TO_LB;
           const totalLb = perItemLb * qty;
 
-          // Safe keys: if server sends stable ids later, prefer that over index
+          const importanceKey = (g.importance ?? 'recommended') as Importance;
+          const categoryKey = (g.category ?? 'other') as GearCategory;
+
           return (
             <div
               key={idx}
@@ -98,27 +78,23 @@ export default function GearList({ gear = [] }: GearListProps) {
               </div>
 
               <div className='flex items-center gap-2'>
-                {g.importance && (
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full border ${
-                      importanceStyles[g.importance] ?? importanceStyles.recommended
-                    }`}
-                  >
-                    {g.importance === 'optional'
-                      ? 'Nice to have'
-                      : g.importance.charAt(0).toUpperCase() + g.importance.slice(1)}
-                  </span>
-                )}
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full border ${
+                    importanceStyles[importanceKey]
+                  }`}
+                >
+                  {importanceKey === 'optional'
+                    ? 'Nice to have'
+                    : importanceKey.charAt(0).toUpperCase() + importanceKey.slice(1)}
+                </span>
 
-                {g.category && (
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full border ${
-                      categoryStyles[g.category] ?? categoryStyles.other
-                    }`}
-                  >
-                    {String(g.category).replace('_', ' ')}
-                  </span>
-                )}
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full border ${
+                    categoryStyles[categoryKey]
+                  }`}
+                >
+                  {String(categoryKey).replace('_', ' ')}
+                </span>
 
                 {g.notes && (
                   <span className='text-xs text-text-secondary line-clamp-1 max-w-[220px]'>

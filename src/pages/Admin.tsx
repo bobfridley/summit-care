@@ -23,39 +23,7 @@ type SvgIcon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 function cls(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(' ');
 }
-/*function Card({ className = '', children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div
-      className={cls(
-        'rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-950',
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-function CardHeader({
-  title,
-  subtitle,
-  right,
-}: {
-  title: string;
-  subtitle?: string;
-  right?: React.ReactNode;
-}) {
-  return (
-    <div className='flex items-center justify-between gap-4 border-b border-stone-100 px-5 py-4 dark:border-stone-900'>
-      <div>
-        <h3 className='text-sm font-semibold text-stone-900 dark:text-stone-100'>{title}</h3>
-        {subtitle && (
-          <p className='mt-0.5 text-xs text-stone-500 dark:text-stone-400'>{subtitle}</p>
-        )}
-      </div>
-      {right}
-    </div>
-  );
-}*/
+
 function Stat({
   icon: Icon,
   label,

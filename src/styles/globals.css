@@ -1,4 +1,5 @@
 /* src/styles/globals.css */
+@import 'tailwindcss';
 
 /* Tailwind layers (keep if using Tailwind; otherwise harmless) */
 @tailwind base;
