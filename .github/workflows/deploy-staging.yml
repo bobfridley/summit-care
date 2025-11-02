@@ -1,3 +1,4 @@
+---
 name: Deploy (staging)
 
 on:
@@ -20,11 +21,10 @@ jobs:
       port: 3001
       branch: develop
       isPreview: false
-      dryRun: true # flip to false when ready for real deploys
+      dryRun: true # flip to false when ready for real builds
     secrets:
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.STAGING_DEPLOY_APP_DIR }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SSH_PORT: ${{ secrets.SSH_PORT }}
-      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+      DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
+      DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
+      APP_DIR: ${{ secrets.STAGING_APP_DIR }}
+      SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}

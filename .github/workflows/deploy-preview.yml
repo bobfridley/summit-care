@@ -1,3 +1,4 @@
+---
 name: Deploy (preview)
 
 on:
@@ -22,9 +23,8 @@ jobs:
       prNumber: ${{ github.event.pull_request.number }}
       dryRun: false
     secrets:
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.PREVIEW_DEPLOY_APP_DIR }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SSH_PORT: ${{ secrets.SSH_PORT }}
-      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+      DEPLOY_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
+      DEPLOY_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
+      APP_DIR: ${{ secrets.PREVIEW_APP_DIR }}
+      SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+      SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}

@@ -61,3 +61,4 @@ help_files
 *.ts.tmp
 *.tmp.*
 *.bkup
+*.bak

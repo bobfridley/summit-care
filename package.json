@@ -40,7 +40,7 @@
     "precommit:strict": "pnpm exec lint-staged && pnpm run verify",
     "db:check": "ts-node src/lib/checkDb.ts",
     "db:seed": "ts-node src/lib/seed.ts",
-    "start": "next start -p 3000",
+    "start": "next start -p $PORT",
     "rename:jsx-preview": "bash scripts/rename-jsx-to-tsx.sh --preview",
     "rename:jsx-to-tsx": "bash scripts/rename-jsx-to-tsx.sh",
     "ts:nocheck-ui": "bash scripts/ts-nocheck-ui.sh",
