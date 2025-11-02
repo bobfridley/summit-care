@@ -1,10 +1,7 @@
-/** @type {import('next').NextConfig} */
+// next.config.mjs
 const nextConfig = {
+  output: 'standalone',
   basePath: process.env.BASE_PATH || '',
-  trailingSlash: true,
-  async redirects() {
-    // ensures "/" becomes "/dashboard" even when basePath is set
-    return [{ source: '/', destination: '/Dashboard', permanent: false }];
-  },
 };
+
 export default nextConfig;
