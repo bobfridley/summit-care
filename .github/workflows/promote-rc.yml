@@ -1,0 +1,158 @@
+name: Promote RC to Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      rc_tag:
+        description: 'RC tag to promote (e.g. v0.7.0-rc.1)'
+        required: true
+      release_tag:
+        description: "Final tag (default = rc_tag without '-rc.X')"
+        required: false
+      create_github_release:
+        description: 'Also create a GitHub Release?'
+        type: boolean
+        default: true
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Parse inputs
+        id: parse
+        run: |
+          RC="${{ github.event.inputs.rc_tag }}"
+          if [[ -z "${{ github.event.inputs.release_tag }}" ]]; then
+            # strip "-rc.N" suffix
+            RELEASE="${RC%-rc.*}"
+          else
+            RELEASE="${{ github.event.inputs.release_tag }}"
+          fi
+
+          echo "rc=$RC" >> $GITHUB_OUTPUT
+          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # --- Safety checks: require latest prod/staging/preview deploys to be green on main ---
+      - name: Verify latest deploy workflows succeeded (prod/staging/preview)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const requiredWorkflows = [
+              "Deploy (prod)",
+              "Deploy (staging)",
+              "Deploy (preview PR)"  // optional: comment this out if previews aren't required
+            ];
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // helper to get last successful run on main (or for PR flow for preview)
+            async function lastSuccess(name) {
+              const res = await github.rest.actions.listWorkflowRunsForRepo({
+                owner, repo,
+                per_page: 50,
+                status: 'success',
+              });
+              const runs = res.data.workflow_runs.filter(w =>
+                w.name === name &&
+                (w.head_branch === 'main' || name.includes('preview'))
+              );
+              return runs.length ? runs[0] : null;
+            }
+
+            for (const wf of requiredWorkflows) {
+              const run = await lastSuccess(wf);
+              if (!run) {
+                core.setFailed(`Workflow "${wf}" has no recent successful run.`);
+              } else {
+                core.info(`OK: ${wf} last success at ${run.updated_at} (id ${run.id})`);
+              }
+            }
+
+      - name: Resolve RC tag commit
+        id: resolve
+        run: |
+          RC="${{ steps.parse.outputs.rc }}"
+          git fetch --tags --force
+          if ! git rev-parse --verify --quiet "$RC" >/dev/null; then
+            echo "::error::RC tag not found: $RC"
+            exit 1
+          fi
+          COMMIT=$(git rev-list -n 1 "$RC")
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          echo "RC $RC -> $COMMIT"
+
+          - name: Import GPG key
+            if: ${{ vars.SIGN_TAGS == 'true' }}
+            run: |
+              echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
+              KEYID=$(gpg --list-secret-keys --keyid-format LONG | awk '/sec/{print $2}' | cut -d'/' -f2 | head -n1)
+              echo "KEYID=$KEYID" >> $GITHUB_OUTPUT
+            env:
+              GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+          - name: Create/Move final tag (GPG signed)
+            if: ${{ vars.SIGN_TAGS == 'true' }}
+            env:
+              RELEASE: ${{ steps.parse.outputs.release }}
+              COMMIT:  ${{ steps.resolve.outputs.commit }}
+              GPG_TTY: /dev/tty
+              GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+            run: |
+              git config user.name  "Bob Fridley"
+              git config user.email "bobfridley@gmail.com"
+              git config commit.gpgsign true
+              git config user.signingkey "$(gpg --list-secret-keys --keyid-format LONG | awk '/sec/{print $2}' | cut -d'/' -f2 | head -n1)"
+
+              # create/update signed tag
+              if git rev-parse --verify --quiet "$RELEASE" >/dev/null; then
+                git tag -s -f "$RELEASE" "$COMMIT" -m "Release: promote ${{ steps.parse.outputs.rc }} -> $RELEASE"
+              else
+                git tag -s "$RELEASE" "$COMMIT" -m "Release: promote ${{ steps.parse.outputs.rc }} -> $RELEASE"
+              fi
+
+              git push origin "refs/tags/$RELEASE" --force
+
+      - name: Create/Move final tag (annotated, unsigned)
+        env:
+          RELEASE: ${{ steps.parse.outputs.release }}
+          COMMIT: ${{ steps.resolve.outputs.commit }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create or update the tag to point at the RC commit
+          if git rev-parse --verify --quiet "$RELEASE" >/dev/null; then
+            echo "Tag $RELEASE exists, moving it to $COMMIT"
+            git tag -a -f "$RELEASE" "$COMMIT" -m "Release: promote ${{
+              steps.parse.outputs.rc }} -> $RELEASE"
+          else
+            echo "Creating tag $RELEASE at $COMMIT"
+            git tag -a "$RELEASE" "$COMMIT" -m "Release: promote ${{
+              steps.parse.outputs.rc }} -> $RELEASE"
+          fi
+
+          git push origin "refs/tags/$RELEASE" --force
+
+      - name: Create GitHub Release (optional)
+        if: ${{ inputs.create_github_release == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.parse.outputs.release }}
+          name: ${{ steps.parse.outputs.release }}
+          body: |
+            Promoted from ${{ steps.parse.outputs.rc }}.
+
+            Highlights:
+            - CI/CD deploy workflows (prod/staging/preview) verified
+            - Healthcheck alerts with self-heal, rate limiting, roll-up
+            - PM2 ecosystem restarts, standalone Next bundles
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

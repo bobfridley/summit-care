@@ -1,30 +1,61 @@
----
-name: Deploy (preview)
-
+name: Deploy (preview PR)
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened]
 
-concurrency:
-  group: deploy-preview-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 jobs:
-  call-reusable:
-    uses: ./.github/workflows/reusable-deploy.yml
-    with:
-      envName: preview
-      url: https://srv1051247.hstgr.cloud/summit-care-preview
-      basePath: /summit-care-preview
-      pm2Name: summitcare-preview
-      port: 3002
-      isPreview: true
-      prNumber: ${{ github.event.pull_request.number }}
-      dryRun: false
-    secrets:
-      DEPLOY_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.PREVIEW_APP_DIR }}
-      SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
-      SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${{ secrets.PREVIEW_SSH_PORT }}" "${{ secrets.PREVIEW_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+
+      - name: Build & restart preview on server
+        env:
+          HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
+          PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
+          APP_DIR: ${{ secrets.PREVIEW_APP_DIR }}
+          REPO: https://github.com/bobfridley/summit-care
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          ssh -p "$PORT" "$USER@$HOST" "
+            set -e
+            sudo -iu summitcare bash -lc '
+              command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.20.0 --activate)
+
+              mkdir -p \"$APP_DIR\"
+              cd \"$APP_DIR\"
+
+              if [ -d .git ]; then
+                git fetch --all --prune
+              else
+                git clone \"$REPO\" .
+              fi
+
+              # Checkout PR head locally as pr-<number>
+              git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER || true
+              git checkout pr-$PR_NUMBER
+              git reset --hard pr-$PR_NUMBER
+              git clean -fd
+
+              pnpm install --frozen-lockfile || pnpm install
+              pnpm ignored-builds || true
+
+              BASE_PATH=\"/summit-care-preview\" NEXT_PUBLIC_BASE_PATH=\"/summit-care-preview\" NODE_ENV=\"production\" pnpm run build
+
+              rm -rf .next-preview-previous
+              [ -d .next-preview ] && mv .next-preview .next-preview-previous || true
+              mv .next .next-preview
+
+              pm2 restart summitcare-preview || pm2 start /opt/summitcare/ecosystem.config.cjs --only summitcare-preview
+              pm2 save || true
+            '
+          "

@@ -1,30 +1,29 @@
----
 name: Deploy (staging)
-
 on:
-  push:
-    branches: [develop]
   workflow_dispatch:
-
-concurrency:
-  group: deploy-staging-${{ github.ref }}
-  cancel-in-progress: true
+  # optional:
+  # push: { branches: [ staging ] }
 
 jobs:
-  call-reusable:
-    uses: ./.github/workflows/reusable-deploy.yml
-    with:
-      envName: staging
-      url: https://srv1051247.hstgr.cloud/summit-care-staging
-      basePath: /summit-care-staging
-      pm2Name: summitcare-staging
-      port: 3001
-      branch: develop
-      isPreview: false
-      dryRun: true # flip to false when ready for real builds
-    secrets:
-      DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.STAGING_APP_DIR }}
-      SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
-      SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+  deploy-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${{ secrets.STAGING_SSH_PORT }}" "${{ secrets.STAGING_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+
+      - name: Trigger server deploy (staging)
+        env:
+          HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
+          PORT: ${{ secrets.STAGING_SSH_PORT }}
+          USER: ${{ secrets.STAGING_DEPLOY_USER }}
+          APP_DIR: ${{ secrets.STAGING_APP_DIR }}
+        run: |
+          ssh -p "$PORT" "$USER@$HOST" \
+            "sudo -iu summitcare bash -lc 'APP_DIR=\"${APP_DIR}\" /opt/summitcare/deploy.sh'"

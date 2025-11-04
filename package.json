@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "start": "next start",
     "dev": "next dev",
     "build": "next build",
     "preview": "vite preview",
@@ -40,7 +41,6 @@
     "precommit:strict": "pnpm exec lint-staged && pnpm run verify",
     "db:check": "ts-node src/lib/checkDb.ts",
     "db:seed": "ts-node src/lib/seed.ts",
-    "start": "next start -p $PORT",
     "rename:jsx-preview": "bash scripts/rename-jsx-to-tsx.sh --preview",
     "rename:jsx-to-tsx": "bash scripts/rename-jsx-to-tsx.sh",
     "ts:nocheck-ui": "bash scripts/ts-nocheck-ui.sh",

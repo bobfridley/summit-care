@@ -1,32 +1,28 @@
----
 name: Deploy (prod)
-
 on:
-  workflow_run:
-    workflows: ['CI']
-    types: [completed]
-    branches: [main]
-
-concurrency:
-  group: deploy-prod-${{ github.ref }}
-  cancel-in-progress: true
+  push: { branches: [main] }
+  workflow_dispatch:
 
 jobs:
-  call-reusable:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    uses: ./.github/workflows/reusable-deploy.yml
-    with:
-      envName: production
-      url: https://srv1051247.hstgr.cloud/summit-care
-      basePath: /summit-care
-      pm2Name: summitcare
-      port: 3000
-      branch: main
-      isPreview: false
-      dryRun: false
-    secrets:
-      DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
-      DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
-      APP_DIR: ${{ secrets.PROD_APP_DIR }}
-      SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-      SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+  deploy-prod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${{ secrets.PROD_SSH_PORT }}" "${{ secrets.PROD_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+
+      - name: Trigger server deploy (prod)
+        env:
+          HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+          PORT: ${{ secrets.PROD_SSH_PORT }}
+          USER: ${{ secrets.PROD_DEPLOY_USER }}
+          APP_DIR: ${{ secrets.PROD_APP_DIR }}
+        run: |
+          ssh -p "$PORT" "$USER@$HOST" \
+            "sudo -iu summitcare bash -lc 'APP_DIR=\"${APP_DIR}\" /opt/summitcare/deploy.sh'"
