@@ -6,6 +6,7 @@ on:
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
+    environment: preview # remove this line if you are NOT using Environment secrets
     steps:
       - name: Add host key
         run: |

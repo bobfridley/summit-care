@@ -6,6 +6,7 @@ on:
 jobs:
   deploy-prod:
     runs-on: ubuntu-latest
+    environment: production # remove this line if you are NOT using Environment secrets
     steps:
       - name: Add host key
         run: |

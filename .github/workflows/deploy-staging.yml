@@ -1,29 +1,64 @@
-name: Deploy (staging)
-on:
-  workflow_dispatch:
-  # optional:
-  # push: { branches: [ staging ] }
-
 jobs:
   deploy-staging:
     runs-on: ubuntu-latest
+    environment: staging # remove this line if you are NOT using Environment secrets
     steps:
+      - name: Resolve secrets and set defaults
+        id: vars
+        env:
+          DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+          APP_DIR: ${{ secrets.STAGING_APP_DIR }}
+        run: |
+          # Fail clearly if required values are missing
+          for v in DEPLOY_USER DEPLOY_HOST APP_DIR; do
+            if [ -z "${!v}" ]; then echo "::error::$v is empty"; exit 1; fi
+          done
+
+          # Default SSH port to 22 if not provided
+          PORT="${SSH_PORT:-22}"
+
+          echo "DEPLOY_USER=$DEPLOY_USER" >> $GITHUB_OUTPUT
+          echo "DEPLOY_HOST=$DEPLOY_HOST" >> $GITHUB_OUTPUT
+          echo "PORT=$PORT"               >> $GITHUB_OUTPUT
+          echo "APP_DIR=$APP_DIR"         >> $GITHUB_OUTPUT
+
       - name: Add host key
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.STAGING_SSH_PORT }}" "${{ secrets.STAGING_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          if [ "${{ steps.vars.outputs.PORT }}" != "22" ]; then
+            ssh-keyscan -T 5 -p "${{ steps.vars.outputs.PORT }}" "${{ steps.vars.outputs.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 5 "${{ steps.vars.outputs.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          fi
 
       - name: SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
 
-      - name: Trigger server deploy (staging)
-        env:
-          HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-          PORT: ${{ secrets.STAGING_SSH_PORT }}
-          USER: ${{ secrets.STAGING_DEPLOY_USER }}
-          APP_DIR: ${{ secrets.STAGING_APP_DIR }}
+      - name: Connectivity check
         run: |
-          ssh -p "$PORT" "$USER@$HOST" \
-            "sudo -iu summitcare bash -lc 'APP_DIR=\"${APP_DIR}\" /opt/summitcare/deploy.sh'"
+          set -e
+          if [ "${{ steps.vars.outputs.PORT }}" != "22" ]; then
+            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -p "${{ steps.vars.outputs.PORT }}" \
+              "${{ steps.vars.outputs.DEPLOY_USER }}@${{ steps.vars.outputs.DEPLOY_HOST }}" \
+              "echo 'SSH OK:' \$(whoami) '@' \$(hostname); uname -a"
+          else
+            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
+              "${{ steps.vars.outputs.DEPLOY_USER }}@${{ steps.vars.outputs.DEPLOY_HOST }}" \
+              "echo 'SSH OK:' \$(whoami) '@' \$(hostname); uname -a"
+          fi
+
+      - name: Trigger server deploy script (staging)
+        run: |
+          if [ "${{ steps.vars.outputs.PORT }}" != "22" ]; then
+            ssh -p "${{ steps.vars.outputs.PORT }}" \
+              "${{ steps.vars.outputs.DEPLOY_USER }}@${{ steps.vars.outputs.DEPLOY_HOST }}" \
+              "sudo -iu summitcare bash -lc 'APP_DIR=\"${{ steps.vars.outputs.APP_DIR }}\" /opt/summitcare/deploy.sh'"
+          else
+            ssh \
+              "${{ steps.vars.outputs.DEPLOY_USER }}@${{ steps.vars.outputs.DEPLOY_HOST }}" \
+              "sudo -iu summitcare bash -lc 'APP_DIR=\"${{ steps.vars.outputs.APP_DIR }}\" /opt/summitcare/deploy.sh'"
+          fi
