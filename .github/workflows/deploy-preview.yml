@@ -36,21 +36,29 @@ jobs:
           fi
           chmod 600 ~/.ssh/known_hosts
 
-      - name: SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
-
-      - name: Trigger server deploy (preview)
+      - name: Install SSH key (no agent)
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          umask 177
+          printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          # optional: restrict known_hosts to the host/port we use
+          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
+            ssh-keyscan -T 5 -p "${{ steps.vars.outputs.port }}" "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 5 "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
+          fi
+
+      # Recommended: call your server deploy script
+      - name: Trigger server deploy (preview)
         run: |
           if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
-            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -p "${{ steps.vars.outputs.port }}" \
+            ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes -o BatchMode=yes -p "${{ steps.vars.outputs.port }}" \
               "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
-              "sudo -iu summitcare bash -lc 'PR_NUMBER=${PR_NUMBER} ONLY=preview APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
+              "sudo -iu summitcare bash -lc 'ONLY=preview APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
           else
-            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes -o BatchMode=yes \
               "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
-              "sudo -iu summitcare bash -lc 'PR_NUMBER=${PR_NUMBER} ONLY=preview APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
+              "sudo -iu summitcare bash -lc 'ONLY=preview APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
           fi
