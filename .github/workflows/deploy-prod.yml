@@ -1,17 +1,41 @@
 name: Deploy (prod)
 on:
-  push: { branches: [main] }
   workflow_dispatch:
+  push:
+    branches: [main]
 
 jobs:
   deploy-prod:
     runs-on: ubuntu-latest
-    environment: production # remove this line if you are NOT using Environment secrets
+    environment: production
     steps:
+      - name: Resolve secrets and set defaults
+        id: vars
+        env:
+          DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
+          SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          APP_DIR: ${{ secrets.PROD_APP_DIR }}
+        run: |
+          set -e
+          for v in DEPLOY_HOST DEPLOY_USER APP_DIR; do
+            if [ -z "${!v}" ]; then echo "::error::$v is empty"; exit 1; fi
+          done
+          PORT="${SSH_PORT:-22}"
+          echo "host=$DEPLOY_HOST" >> $GITHUB_OUTPUT
+          echo "user=$DEPLOY_USER" >> $GITHUB_OUTPUT
+          echo "port=$PORT"        >> $GITHUB_OUTPUT
+          echo "app_dir=$APP_DIR"  >> $GITHUB_OUTPUT
+
       - name: Add host key
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.PROD_SSH_PORT }}" "${{ secrets.PROD_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
+            ssh-keyscan -T 5 -p "${{ steps.vars.outputs.port }}" "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 5 "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
+          fi
+          chmod 600 ~/.ssh/known_hosts
 
       - name: SSH agent
         uses: webfactory/ssh-agent@v0.9.0
@@ -19,11 +43,13 @@ jobs:
           ssh-private-key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
 
       - name: Trigger server deploy (prod)
-        env:
-          HOST: ${{ secrets.PROD_DEPLOY_HOST }}
-          PORT: ${{ secrets.PROD_SSH_PORT }}
-          USER: ${{ secrets.PROD_DEPLOY_USER }}
-          APP_DIR: ${{ secrets.PROD_APP_DIR }}
         run: |
-          ssh -p "$PORT" "$USER@$HOST" \
-            "sudo -iu summitcare bash -lc 'APP_DIR=\"${APP_DIR}\" /opt/summitcare/deploy.sh'"
+          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
+            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -p "${{ steps.vars.outputs.port }}" \
+              "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
+              "sudo -iu summitcare bash -lc 'ONLY=prod APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
+          else
+            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
+              "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
+              "sudo -iu summitcare bash -lc 'ONLY=prod APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
+          fi

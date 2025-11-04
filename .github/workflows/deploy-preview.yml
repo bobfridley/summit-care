@@ -6,57 +6,51 @@ on:
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
-    environment: preview # remove this line if you are NOT using Environment secrets
+    environment: preview
     steps:
+      - name: Resolve secrets and set defaults
+        id: vars
+        env:
+          DEPLOY_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
+          SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+          APP_DIR: ${{ secrets.PREVIEW_APP_DIR }}
+        run: |
+          set -e
+          for v in DEPLOY_HOST DEPLOY_USER APP_DIR; do
+            if [ -z "${!v}" ]; then echo "::error::$v is empty"; exit 1; fi
+          done
+          PORT="${SSH_PORT:-22}"
+          echo "host=$DEPLOY_HOST" >> $GITHUB_OUTPUT
+          echo "user=$DEPLOY_USER" >> $GITHUB_OUTPUT
+          echo "port=$PORT"        >> $GITHUB_OUTPUT
+          echo "app_dir=$APP_DIR"  >> $GITHUB_OUTPUT
+
       - name: Add host key
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -p "${{ secrets.PREVIEW_SSH_PORT }}" "${{ secrets.PREVIEW_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
+            ssh-keyscan -T 5 -p "${{ steps.vars.outputs.port }}" "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 5 "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
+          fi
+          chmod 600 ~/.ssh/known_hosts
 
       - name: SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
 
-      - name: Build & restart preview on server
+      - name: Trigger server deploy (preview)
         env:
-          HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
-          PORT: ${{ secrets.PREVIEW_SSH_PORT }}
-          USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
-          APP_DIR: ${{ secrets.PREVIEW_APP_DIR }}
-          REPO: https://github.com/bobfridley/summit-care
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          ssh -p "$PORT" "$USER@$HOST" "
-            set -e
-            sudo -iu summitcare bash -lc '
-              command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.20.0 --activate)
-
-              mkdir -p \"$APP_DIR\"
-              cd \"$APP_DIR\"
-
-              if [ -d .git ]; then
-                git fetch --all --prune
-              else
-                git clone \"$REPO\" .
-              fi
-
-              # Checkout PR head locally as pr-<number>
-              git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER || true
-              git checkout pr-$PR_NUMBER
-              git reset --hard pr-$PR_NUMBER
-              git clean -fd
-
-              pnpm install --frozen-lockfile || pnpm install
-              pnpm ignored-builds || true
-
-              BASE_PATH=\"/summit-care-preview\" NEXT_PUBLIC_BASE_PATH=\"/summit-care-preview\" NODE_ENV=\"production\" pnpm run build
-
-              rm -rf .next-preview-previous
-              [ -d .next-preview ] && mv .next-preview .next-preview-previous || true
-              mv .next .next-preview
-
-              pm2 restart summitcare-preview || pm2 start /opt/summitcare/ecosystem.config.cjs --only summitcare-preview
-              pm2 save || true
-            '
-          "
+          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
+            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -p "${{ steps.vars.outputs.port }}" \
+              "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
+              "sudo -iu summitcare bash -lc 'PR_NUMBER=${PR_NUMBER} ONLY=preview APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
+          else
+            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
+              "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
+              "sudo -iu summitcare bash -lc 'PR_NUMBER=${PR_NUMBER} ONLY=preview APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
+          fi
