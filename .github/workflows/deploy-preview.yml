@@ -1,57 +1,48 @@
-name: Deploy (preview PR)
+name: Deploy (preview)
+
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or tag to deploy (e.g. feature branch)"
+        required: true
+        default: "base44-reset"
+      pr_number:
+        description: "Optional PR number (for your own logging)"
+        required: false
 
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
-    environment: preview
+
     steps:
-      - name: Resolve secrets and set defaults
-        id: vars
+      - name: Install SSH key (no agent)
         env:
-          DEPLOY_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
-          SSH_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
-          APP_DIR: ${{ secrets.PREVIEW_APP_DIR }}
+          SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          DEPLOY_HOST:     ${{ secrets.PREVIEW_DEPLOY_HOST }}
+          SSH_PORT:        ${{ secrets.PREVIEW_SSH_PORT }}
         run: |
-          set -e
-          for v in DEPLOY_HOST DEPLOY_USER APP_DIR; do
-            if [ -z "${!v}" ]; then echo "::error::$v is empty"; exit 1; fi
-          done
-          PORT="${SSH_PORT:-22}"
-          echo "host=$DEPLOY_HOST" >> $GITHUB_OUTPUT
-          echo "user=$DEPLOY_USER" >> $GITHUB_OUTPUT
-          echo "port=$PORT"        >> $GITHUB_OUTPUT
-          echo "app_dir=$APP_DIR"  >> $GITHUB_OUTPUT
-
-      - name: Add host key
-        run: |
-          mkdir -p ~/.ssh
-          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
-            ssh-keyscan -T 5 -p "${{ steps.vars.outputs.port }}" "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
+          install -m 700 -d ~/.ssh
+          umask 177
+          printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          if [ -n "$SSH_PORT" ]; then
+            ssh-keyscan -T 5 -p "$SSH_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           else
-            ssh-keyscan -T 5 "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
+            ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
-          chmod 600 ~/.ssh/known_hosts
 
-      - name: SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
-
-      # Recommended: call your server deploy script
       - name: Trigger server deploy (preview)
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DEPLOY_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
+          SSH_PORT:    ${{ secrets.PREVIEW_SSH_PORT }}
+          APP_DIR:     ${{ secrets.PREVIEW_APP_DIR }}  # e.g. /var/www/summit-care
+          REF:         ${{ github.event.inputs.ref }}
+          PR_NUMBER:   ${{ github.event.inputs.pr_number }}
         run: |
-          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
-            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -p "${{ steps.vars.outputs.port }}" \
-              "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
-              "sudo -iu summitcare bash -lc 'PR_NUMBER=${PR_NUMBER} ONLY=preview APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
-          else
-            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
-              "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
-              "sudo -iu summitcare bash -lc 'PR_NUMBER=${PR_NUMBER} ONLY=preview APP_DIR=\"${{ steps.vars.outputs.app_dir }}\" /opt/summitcare/deploy.sh'"
-          fi
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
+
+          ssh -i ~/.ssh/id_deploy $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
+            "BRANCH='$REF' APP_DIR='$APP_DIR' ONLY=preview PR_NUMBER='${PR_NUMBER}' /opt/summitcare/deploy.sh"
