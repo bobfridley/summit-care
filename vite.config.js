@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 const BASE = process.env.VITE_BASE_PATH || '/'
-const BUILD_NAME = process.env.BUILD_NAME || 'prod' // 'prod' | 'staging' | 'preview'
+const BUILD_NAME = process.env.BUILD_NAME || 'staging' // default is fine
 
 export default defineConfig({
   plugins: [react()],
@@ -12,7 +12,7 @@ export default defineConfig({
   server: { allowedHosts: true },
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
-    extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json']
+    extensions: ['.mjs','.js','.jsx','.ts','.tsx','.json']
   },
   optimizeDeps: { esbuildOptions: { loader: { '.js': 'jsx' } } }
 })
