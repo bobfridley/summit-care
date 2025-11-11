@@ -1,0 +1,57 @@
+name: Auto-Triage and Label
+on:
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-label new issues
+        if: github.event_name == 'issues'
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          labels: |
+            needs-triage
+            priority:p2
+
+      - name: Label PRs by environment
+        if: github.event_name == 'pull_request'
+        run: |
+          PR_BRANCH="${{ github.head_ref }}"
+          LABEL=""
+
+          if [[ "$PR_BRANCH" == *"staging"* ]]; then
+            LABEL="env:staging"
+          elif [[ "$PR_BRANCH" == *"preview"* ]]; then
+            LABEL="env:preview"
+          elif [[ "$PR_BRANCH" == *"prod"* || "$PR_BRANCH" == *"main"* ]]; then
+            LABEL="env:prod"
+          else
+            LABEL="env:local"
+          fi
+
+          echo "Applying label: $LABEL"
+          gh issue edit ${{ github.event.pull_request.number }} --add-label "$LABEL"
+          echo "Applying default priority"
+          gh issue edit ${{ github.event.pull_request.number }} --add-label "priority:p2"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- Optional: keyword-based auto-bump (enable when ready) ---
+      # - name: Escalate priority based on title keywords (PRs)
+      #   if: github.event_name == 'pull_request'
+      #   run: |
+      #     TITLE="${{ github.event.pull_request.title }}"
+      #     if echo "$TITLE" | grep -Ei '(urgent|blocker|p0|outage|hotfix)'; then
+      #       gh issue edit ${{ github.event.pull_request.number }} --add-label "priority:p0"
+      #       gh issue edit ${{ github.event.pull_request.number }} --remove-label "priority:p2" || true
+      #     elif echo "$TITLE" | grep -Ei '(high|p1|critical)'; then
+      #       gh issue edit ${{ github.event.pull_request.number }} --add-label "priority:p1"
+      #       gh issue edit ${{ github.event.pull_request.number }} --remove-label "priority:p2" || true
+      #     fi
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

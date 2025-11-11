@@ -1,0 +1,25 @@
+name: Unlock Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [prod, staging, preview]
+        default: prod
+
+jobs:
+  unlock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove lock
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ github.event.inputs.environment == 'prod' && secrets.DEPLOY_APP_DIR || (github.event.inputs.environment == 'staging' && secrets.DEPLOY_STAGING_APP_DIR || secrets.DEPLOY_PREVIEW_APP_DIR) }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            rm -f \"$APP_DIR/.deploy/LOCK_TAG\"
+            echo \"Lock removed. Next deploy will track its branch.\"
+          "

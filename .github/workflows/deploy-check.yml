@@ -1,0 +1,23 @@
+name: Deploy Check
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Prettier (check)
+        run: pnpm exec prettier . --check
+      - name: ESLint
+        run: pnpm exec eslint . --max-warnings=0
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+      - name: Next build (no artifacts)
+        env: { NODE_ENV: production, BASE_PATH: /summit-care }
+        run: pnpm run build

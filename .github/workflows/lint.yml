@@ -1,0 +1,78 @@
+name: Lint & Format
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths-ignore:
+      - '*.md'
+      - '*.png'
+      - '*.jpg'
+      - '*.svg'
+      - 'docs/**'
+  pull_request:
+    branches: ['**']
+    paths-ignore:
+      - '*.md'
+      - '*.png'
+      - '*.jpg'
+      - '*.svg'
+      - 'docs/**'
+
+# Cancel prior runs of the same branch/PR to save minutes
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: ESLint / Prettier / TS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          set-safe-directory: '*'
+
+      - name: Add safe directory for Git
+        run: git config --global --add safe.directory \"$APP_DIR\"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ESLint (no auto-fix in CI; fail on any warning to keep PRs clean)
+      - name: ESLint
+        run: pnpm exec eslint . --max-warnings=0
+
+      # Prettier: ensure formatting matches your .prettierrc
+      - name: Prettier check
+        run: pnpm exec prettier . --check
+
+      # TypeScript: prefer a combined lint project if present; fall back to app tsconfig
+      - name: TypeScript typecheck
+        shell: bash
+        run: |
+          if [[ -f "tsconfig.eslint.json" ]]; then
+            echo "Using tsconfig.eslint.json"
+            pnpm exec tsc -p tsconfig.eslint.json --noEmit
+          elif [[ -f "tsconfig.server.json" ]]; then
+            echo "Using tsconfig.server.json"
+            pnpm exec tsc -p tsconfig.server.json --noEmit
+          else
+            echo "Using tsconfig.json"
+            pnpm exec tsc -p tsconfig.json --noEmit
+          fi

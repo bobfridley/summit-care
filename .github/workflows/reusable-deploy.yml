@@ -1,0 +1,206 @@
+---
+name: Reusable Deploy
+
+'on':
+  workflow_call:
+    inputs:
+      envName:
+        description: 'Environment name (production|staging|preview)'
+        required: true
+        type: string
+      url:
+        description: 'Public URL for this environment'
+        required: true
+        type: string
+      basePath:
+        description: 'Next.js basePath (e.g. /summit-care)'
+        required: true
+        type: string
+      pm2Name:
+        description: 'PM2 process name'
+        required: true
+        type: string
+      port:
+        description: 'Port for Next.js server (e.g. 3000)'
+        required: true
+        type: number
+      branch:
+        description: 'Git branch to deploy (main|develop). Omit for preview.'
+        required: false
+        type: string
+      isPreview:
+        description: 'Is this a preview deployment?'
+        required: true
+        type: boolean
+      prNumber:
+        description: 'Pull request number (only for preview)'
+        required: false
+        type: number
+      dryRun:
+        description: 'Run deploy script without build or pm2 reload'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      DEPLOY_USER:
+        required: true
+      DEPLOY_HOST:
+        required: true
+      APP_DIR:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SSH_PORT:
+        required: false
+      KNOWN_HOSTS:
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.envName }}
+      url: ${{ inputs.url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add deploy key to ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # yamllint disable rule:line-length
+      - name: Install SSH known_hosts (or fallback to ssh-keyscan)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+            echo "✅ Wrote KNOWN_HOSTS secret"
+          else
+            echo "⚠️ KNOWN_HOSTS not set — using ssh-keyscan"
+            if [ -n "$SSH_PORT" ]; then
+              (ssh-keyscan -p "$SSH_PORT" -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+              (ssh-keyscan -p "$SSH_PORT" -t rsa     "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            else
+              (ssh-keyscan -t ed25519 "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+              (ssh-keyscan -t rsa     "$DEPLOY_HOST" 2>/dev/null || true) >> ~/.ssh/known_hosts
+            fi
+            echo "✅ Captured host keys via ssh-keyscan"
+          fi
+          chmod 600 ~/.ssh/known_hosts
+      # yamllint enable
+      - name: Sanity SSH
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "echo 'SSH OK:' \$(whoami) '@' \$(hostname); uname -a"
+
+      - name: Log resolved deploy inputs
+        run: |
+          echo "🏷 envName=${{ inputs.envName }}"
+          echo "🌐 url=${{ inputs.url }}"
+          echo "📦 basePath=${{ inputs.basePath }}"
+          echo "🟰 pm2Name=${{ inputs.pm2Name }}"
+          echo "🔌 app port=${{ inputs.port }}"
+          echo "🌿 branch=${{ inputs.branch }}"
+          echo "🔍 isPreview=${{ inputs.isPreview }}"
+          echo "🧪 dryRun=${{ inputs.dryRun }}"
+          test -n "${{ secrets.DEPLOY_USER }}" && echo "🔐 DEPLOY_USER: set"
+          test -n "${{ secrets.DEPLOY_HOST }}" && echo "🔐 DEPLOY_HOST: set"
+          test -n "${{ secrets.APP_DIR }}" && echo "🔐 APP_DIR: set"
+
+      # yamllint disable rule:line-length
+      - name: Deploy to remote host
+        if: ${{ inputs.dryRun != true }}
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          NODE_ENV: production
+          BASE_PATH: ${{ inputs.basePath }}
+          PM2_NAME: ${{ inputs.pm2Name }}
+          PORT: ${{ inputs.port }}
+          IS_PREVIEW: ${{ inputs.isPreview }}
+          BRANCH: ${{ inputs.branch }}
+          PR_NUMBER: ${{ inputs.prNumber }}
+        run: |
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
+
+          echo "🚀 Starting deploy to $DEPLOY_HOST:${SSH_PORT:-22}"
+          echo "📁 APP_DIR=$APP_DIR"
+          echo "🟰 PM2_NAME=$PM2_NAME"
+          echo "🔌 PORT=$PORT"
+          echo "🌿 BRANCH=${BRANCH:-main}"
+
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.19.0 --activate)
+
+            mkdir -p \"$APP_DIR\"
+            cd \"$APP_DIR\"
+
+            if [ -d .git ]; then
+              git fetch --all --prune
+              if [ \"$IS_PREVIEW\" = \"true\" ] && [ -n \"$PR_NUMBER\" ]; then
+                git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
+                git checkout pr-$PR_NUMBER
+              else
+                git reset --hard origin/${BRANCH:-main}
+                git clean -fd
+              fi
+            else
+              git clone https://github.com/bobfridley/summit-care .
+              if [ \"$IS_PREVIEW\" = \"true\" ] && [ -n \"$PR_NUMBER\" ]; then
+                git fetch origin pull/$PR_NUMBER/head:pr-$PR_NUMBER
+                git checkout pr-$PR_NUMBER
+              else
+                git reset --hard origin/${BRANCH:-main}
+              fi
+            fi
+
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm ignored-builds || true
+
+            BASE_PATH=\"$BASE_PATH\" NODE_ENV=\"$NODE_ENV\" pnpm run build
+
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" --update-env ) \
+              || pnpm dlx pm2 reload \"$PM2_NAME\" --update-env \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p \"$PORT\"
+
+            pnpm dlx pm2 save || true
+          "
+      # yamllint enable
+      - name: Dry run — skip remote build/pm2
+        if: ${{ inputs.dryRun == true }}
+        run: |
+          echo "🧪 dryRun=true — skipping remote build and PM2 steps."
+          echo "✅ Dry-run complete."
+
+      - name: Deployment status
+        if: always()
+        run: |
+          echo ""
+          echo "📦 Deployment Summary"
+          echo "Environment: ${{ inputs.envName }}"
+          echo "pm2Name:    ${{ inputs.pm2Name }}"
+          echo "Host:       ${{ secrets.DEPLOY_HOST }}"
+          echo "App Dir:    ${{ secrets.APP_DIR }}"
+          echo "Dry Run:    ${{ inputs.dryRun }}"
+          echo "✅ Completed at: $(date -u)"

@@ -1,0 +1,113 @@
+name: Test GPG Import & Signing
+on:
+  workflow_dispatch: {}
+
+jobs:
+  test-gpg:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (optional)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Import GPG private key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "::error::GPG_PRIVATE_KEY secret is empty or missing."
+            exit 1
+          fi
+
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -p "$GNUPGHOME"
+          chmod 700 "$GNUPGHOME"
+
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+
+          echo "== Secret keys =="
+          gpg --list-secret-keys --keyid-format LONG
+
+          KEYID=$(gpg --list-secret-keys --keyid-format LONG | awk '/^sec/{print $2}' | sed 's#.*/##' | head -n1)
+          FPR=$(gpg --fingerprint "$KEYID" | awk 'NR==2{gsub(" ","");print}')
+          echo "KEYID=$KEYID" >> $GITHUB_ENV
+          echo "FPR=$FPR"     >> $GITHUB_ENV
+
+      - name: 'Guard: verify imported key matches expected'
+        run: |
+          EXP_KID="${{ vars.EXPECTED_GPG_KEYID }}"
+          EXP_FPR="${{ vars.EXPECTED_GPG_FPR }}"
+
+          if [ -z "$EXP_KID" ] && [ -z "$EXP_FPR" ]; then
+            echo "::warning::No EXPECTED_GPG_KEYID or EXPECTED_GPG_FPR set; skipping guard."
+            exit 0
+          fi
+
+          ACT_KID="$KEYID"
+          ACT_FPR="$FPR"
+
+          echo "Expected KEYID: ${EXP_KID:-<unset>}"
+          echo "Actual   KEYID: $ACT_KID"
+          echo "Expected  FPR : ${EXP_FPR:-<unset>}"
+          echo "Actual    FPR : $ACT_FPR"
+
+          FAIL=0
+          if [ -n "$EXP_KID" ] && [ "$EXP_KID" != "$ACT_KID" ]; then
+            echo "::error::KEYID mismatch"
+            FAIL=1
+          fi
+          if [ -n "$EXP_FPR" ] && [ "$EXP_FPR" != "$ACT_FPR" ]; then
+            echo "::error::Fingerprint mismatch"
+            FAIL=1
+          fi
+
+          if [ $FAIL -ne 0 ]; then
+            echo "::error::GPG key verification failed."
+            exit 1
+          fi
+
+          echo "✅ GPG key identity verified OK."
+          echo "--------------------------------------------"
+          echo "Verified KEYID: $ACT_KID"
+          echo "Verified FPR  : $ACT_FPR"
+          echo "--------------------------------------------"
+
+      - name: Print signing identity
+        run: |
+          echo "Signing KEYID: $KEYID"
+          echo "Fingerprint : $FPR"
+
+      - name: Test clearsign + verify
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          echo "allow-loopback-pinentry" >> "$GNUPGHOME/gpg-agent.conf"
+          gpgconf --reload gpg-agent
+          export GPG_TTY=$(tty || true)
+
+          PASS_FLAGS=()
+          if [ -n "$GPG_PASSPHRASE" ]; then
+            PASS_FLAGS=(--pinentry-mode loopback --passphrase "$GPG_PASSPHRASE")
+          fi
+
+          echo "Hello from CI at $(date -Is)" > message.txt
+          gpg --batch "${PASS_FLAGS[@]}" --local-user "$KEYID" --clearsign message.txt
+          echo "== Signed message preview =="
+          head -n 8 message.txt.asc
+
+          echo "== Verify signature =="
+          gpg --verify message.txt.asc
+
+      - name: Summary ✅
+        if: ${{ success() }}
+        run: |
+          echo ""
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅  SUCCESS: GPG key imported and verified."
+          echo "    KEYID: $KEYID"
+          echo "    FPR  : $FPR"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

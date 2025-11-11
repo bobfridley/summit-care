@@ -1,0 +1,219 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which environment to roll back?'
+        type: choice
+        required: true
+        options:
+          - prod
+          - staging
+          - preview
+        default: prod
+      git_ref:
+        description: 'Git ref to roll back to (SHA, tag, or branch)'
+        type: string
+        required: true
+      rebuild:
+        description: 'Rebuild before restart? (recommended)'
+        type: boolean
+        required: true
+        default: true
+      note:
+        description: 'Optional note (why are we rolling back?)'
+        type: string
+        required: false
+
+jobs:
+  rollback-prod:
+    if: ${{ github.event.inputs.environment == 'prod' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://srv1051247.hstgr.cloud/summit-care
+    steps:
+      - name: Roll back production
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
+          PM2_NAME: summitcare
+          PORT: 3000
+          BASE_PATH: /summit-care
+          GIT_REF: ${{ github.event.inputs.git_ref }}
+          REBUILD: ${{ github.event.inputs.rebuild }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.19.0 --activate)
+
+            mkdir -p \"$APP_DIR\"
+            cd \"$APP_DIR\"
+
+            if [ ! -d .git ]; then
+              git clone https://github.com/bobfridley/summit-care .
+            fi
+
+            git fetch --all --prune --tags
+
+            # Save a safety tag for current HEAD
+            CURRENT_HEAD=\$(git rev-parse HEAD || echo 'unknown')
+            git tag -f rollback-backup-\$(date +%Y%m%d%H%M%S) \"\$CURRENT_HEAD\" || true
+
+            # Checkout requested ref
+            git checkout --force \"$GIT_REF\"
+            git reset --hard \"\$GIT_REF\"
+            git clean -fd
+
+            pnpm install --frozen-lockfile || pnpm install
+
+            if [ \"$REBUILD\" = \"true\" ]; then
+              export NEXT_TELEMETRY_DISABLED=1
+              export NODE_OPTIONS=\"--max_old_space_size=1536\"
+              BASE_PATH=\"$BASE_PATH\" NODE_ENV=production pnpm run build
+            fi
+
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
+              || pnpm dlx pm2 reload \"$PM2_NAME\" \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p \"$PORT\"
+
+            pnpm dlx pm2 save || true
+
+            # --- tag this deploy as "good" ---
+            SHORT=\$(git rev-parse --short HEAD)
+            TS=\$(date +%Y-%m-%d-%H%M)
+            TAG_PREFIX="<ENV>-deploy"   # replace per file: prod-deploy / staging-deploy / preview-deploy
+            TAG_NAME="\${TAG_PREFIX}-\${TS}-\${SHORT}"
+
+            git tag -f "\$TAG_NAME" "\$SHORT" || true
+            git push origin --tags || true
+            echo "Tagged good deploy: \$TAG_NAME"
+          "
+
+  rollback-staging:
+    if: ${{ github.event.inputs.environment == 'staging' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://srv1051247.hstgr.cloud/summit-care-staging
+    steps:
+      - name: Roll back staging
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.DEPLOY_STAGING_APP_DIR }}
+          PM2_NAME: summitcare-staging
+          PORT: 3001
+          BASE_PATH: /summit-care-staging
+          GIT_REF: ${{ github.event.inputs.git_ref }}
+          REBUILD: ${{ github.event.inputs.rebuild }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.19.0 --activate)
+
+            mkdir -p \"$APP_DIR\"
+            cd \"$APP_DIR\"
+
+            if [ ! -d .git ]; then
+              git clone https://github.com/bobfridley/summit-care .
+            fi
+
+            git fetch --all --prune --tags
+
+            CURRENT_HEAD=\$(git rev-parse HEAD || echo 'unknown')
+            git tag -f rollback-backup-\$(date +%Y%m%d%H%M%S) \"\$CURRENT_HEAD\" || true
+
+            git checkout --force \"$GIT_REF\"
+            git reset --hard \"\$GIT_REF\"
+            git clean -fd
+
+            pnpm install --frozen-lockfile || pnpm install
+
+            if [ \"$REBUILD\" = \"true\" ]; then
+              export NEXT_TELEMETRY_DISABLED=1
+              export NODE_OPTIONS=\"--max_old_space_size=1536\"
+              BASE_PATH=\"$BASE_PATH\" NODE_ENV=production pnpm run build
+            fi
+
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
+              || pnpm dlx pm2 reload \"$PM2_NAME\" \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p \"$PORT\"
+
+            pnpm dlx pm2 save || true
+
+            # --- tag this deploy as "good" ---
+            SHORT=\$(git rev-parse --short HEAD)
+            TS=\$(date +%Y-%m-%d-%H%M)
+            TAG_PREFIX="<ENV>-deploy"   # replace per file: prod-deploy / staging-deploy / preview-deploy
+            TAG_NAME="\${TAG_PREFIX}-\${TS}-\${SHORT}"
+
+            git tag -f "\$TAG_NAME" "\$SHORT" || true
+            git push origin --tags || true
+            echo "Tagged good deploy: \$TAG_NAME"
+          "
+
+  rollback-preview:
+    if: ${{ github.event.inputs.environment == 'preview' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: preview
+      url: https://srv1051247.hstgr.cloud/summit-care-preview
+    steps:
+      - name: Roll back preview
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_DIR: ${{ secrets.DEPLOY_PREVIEW_APP_DIR }}
+          PM2_NAME: summitcare-preview
+          PORT: 3002
+          BASE_PATH: /summit-care-preview
+          GIT_REF: ${{ github.event.inputs.git_ref }}
+          REBUILD: ${{ github.event.inputs.rebuild }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+            command -v pnpm >/dev/null 2>&1 || (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true; corepack enable && corepack prepare pnpm@10.19.0 --activate)
+
+            mkdir -p \"$APP_DIR\"
+            cd \"$APP_DIR\"
+
+            if [ ! -d .git ]; then
+              git clone https://github.com/bobfridley/summit-care .
+            fi
+
+            git fetch --all --prune --tags
+
+            CURRENT_HEAD=\$(git rev-parse HEAD || echo 'unknown')
+            git tag -f rollback-backup-\$(date +%Y%m%d%H%M%S) \"\$CURRENT_HEAD\" || true
+
+            git checkout --force \"$GIT_REF\"
+            git reset --hard \"\$GIT_REF\"
+            git clean -fd
+
+            pnpm install --frozen-lockfile || pnpm install
+
+            if [ \"$REBUILD\" = \"true\" ]; then
+              export NEXT_TELEMETRY_DISABLED=1
+              export NODE_OPTIONS=\"--max_old_space_size=1536\"
+              BASE_PATH=\"$BASE_PATH\" NODE_ENV=production pnpm run build
+            fi
+
+            ( command -v pm2 >/dev/null 2>&1 && pm2 reload \"$PM2_NAME\" ) \
+              || pnpm dlx pm2 reload \"$PM2_NAME\" \
+              || pnpm dlx pm2 start 'pnpm -- run start' --name \"$PM2_NAME\" -- -p \"$PORT\"
+
+            pnpm dlx pm2 save || true
+
+            # --- tag this deploy as "good" ---
+            SHORT=\$(git rev-parse --short HEAD)
+            TS=\$(date +%Y-%m-%d-%H%M)
+            TAG_PREFIX="<ENV>-deploy"   # replace per file: prod-deploy / staging-deploy / preview-deploy
+            TAG_NAME="\${TAG_PREFIX}-\${TS}-\${SHORT}"
+
+            git tag -f "\$TAG_NAME" "\$SHORT" || true
+            git push origin --tags || true
+            echo "Tagged good deploy: \$TAG_NAME"
+          "

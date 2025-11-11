@@ -1,0 +1,19 @@
+# .github/workflows/labels-sync.yml
+name: Sync Labels
+on:
+  push:
+    branches: [main]
+    paths: [.github/labels.yml, .github/workflows/labels-sync.yml]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync labels from repo
+        uses: crazy-max/ghaction-github-labeler@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yml
+          skip-delete: true # don’t delete any labels that aren’t listed

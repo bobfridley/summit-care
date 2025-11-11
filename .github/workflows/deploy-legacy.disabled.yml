@@ -1,0 +1,125 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [production, staging, preview]
+
+    environment:
+      name: ${{ matrix.target }}
+      url: ${{ matrix.target == 'production' && 'https://srv1051247.hstgr.cloud/summit-care' || matrix.target == 'staging' && 'https://srv1051247.hstgr.cloud/summit-care-staging' || 'https://srv1051247.hstgr.cloud/summit-care-preview' }}
+
+    steps:
+      - name: Add deploy key to ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Install SSH known_hosts (or fallback to ssh-keyscan)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+        run: |
+          set -e
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            if [ -n "$SSH_PORT" ]; then
+              ssh-keyscan -p "$SSH_PORT" -t ed25519,rsa "$DEPLOY_HOST" 2>/dev/null >> ~/.ssh/known_hosts || true
+            else
+              ssh-keyscan -t ed25519,rsa "$DEPLOY_HOST" 2>/dev/null >> ~/.ssh/known_hosts || true
+            fi
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Resolve per-env config
+        id: cfg
+        run: |
+          set -e
+          case "${{ matrix.target }}" in
+            production)
+              echo "PM2_NAME=summit-care" >> "$GITHUB_OUTPUT"
+              echo "PORT=3000" >> "$GITHUB_OUTPUT"
+              echo "BASE_PATH=/summit-care" >> "$GITHUB_OUTPUT"
+              ;;
+            staging)
+              echo "PM2_NAME=summit-care-staging" >> "$GITHUB_OUTPUT"
+              echo "PORT=3001" >> "$GITHUB_OUTPUT"
+              echo "BASE_PATH=/summit-care-staging" >> "$GITHUB_OUTPUT"
+              ;;
+            preview)
+              echo "PM2_NAME=summit-care-preview" >> "$GITHUB_OUTPUT"
+              echo "PORT=3002" >> "$GITHUB_OUTPUT"
+              echo "BASE_PATH=/summit-care-preview" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+          echo "NODE_ENV=production" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to SummitCare server (${{ matrix.target }})
+        env:
+          DEPLOY_USER: summitcare
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
+          PM2_NAME: ${{ steps.cfg.outputs.PM2_NAME }}
+          PORT: ${{ steps.cfg.outputs.PORT }}
+          BASE_PATH: ${{ steps.cfg.outputs.BASE_PATH }}
+          NODE_ENV: ${{ steps.cfg.outputs.NODE_ENV }}
+        run: |
+          set -e
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
+
+          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "
+            set -e
+
+            # Tooling: ensure pnpm (via Corepack). No global pm2 needed.
+            command -v pnpm >/dev/null 2>&1 || (
+              (command -v corepack >/dev/null 2>&1 || /usr/local/bin/corepack enable || true) &&
+              corepack enable &&
+              corepack prepare pnpm@10.20.0 --activate
+            )
+
+            mkdir -p \"$APP_DIR\"
+            cd \"$APP_DIR\"
+
+            # Git sync
+            if [ -d .git ]; then
+              git fetch --all --prune
+              git reset --hard origin/main
+              git clean -fd
+            else
+              git clone https://github.com/bobfridley/summit-care .
+              git reset --hard origin/main
+            fi
+
+            # Install / build
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm ignored-builds || true
+            BASE_PATH=\"$BASE_PATH\" NODE_ENV=\"$NODE_ENV\" pnpm run build
+
+            # Standalone runtime: start or reload
+            if pnpm dlx pm2 describe \"$PM2_NAME\" >/dev/null 2>&1; then
+              pnpm dlx pm2 reload \"$PM2_NAME\" --update-env
+            else
+              HOST=127.0.0.1 PORT=\"$PORT\" BASE_PATH=\"$BASE_PATH\" NODE_ENV=\"$NODE_ENV\" \
+              pnpm dlx pm2 start node --name \"$PM2_NAME\" -- .next/standalone/server.js
+            fi
+
+            pnpm dlx pm2 save || true
+          "

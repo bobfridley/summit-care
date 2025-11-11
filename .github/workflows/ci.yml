@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: 0
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          set-safe-directory: '*'
+
+      - name: Add safe directory for Git
+        run: git config --global --add safe.directory \"$APP_DIR\"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --if-present run typecheck
+      # Vitest (passes with 0 tests)
+      - run: pnpm --if-present run test
+      # keep lint non-blocking here; pre-commit enforces locally
+      - run: pnpm run lint || true
