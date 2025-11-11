@@ -15,7 +15,10 @@ jobs:
       name: production
 
     steps:
-      - name: Guard: required staging secrets
+      - name: Info
+        run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
+
+      - name: Guard: required production secrets
         env:
           A: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           B: ${{ secrets.PROD_DEPLOY_HOST }}
@@ -28,9 +31,6 @@ jobs:
           [ -n "$C" ] || { echo "::error::PROD_SSH_PORT is empty"; exit 1; }
           [ -n "$D" ] || { echo "::error::PROD_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::PROD_APP_DIR is empty"; exit 1; }
-
-      - name: Info
-          run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
 
       - name: Install SSH key (no agent)
         env:
@@ -58,6 +58,5 @@ jobs:
           set -e
           SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
           if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
-
           ssh -i ~/.ssh/id_deploy $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
             "BRANCH='$REF' APP_DIR='$APP_DIR' ONLY=prod /opt/summitcare/deploy.sh"

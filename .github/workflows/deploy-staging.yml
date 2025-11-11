@@ -15,6 +15,9 @@ jobs:
       name: staging
 
     steps:
+      - name: Info
+        run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
+
       - name: Guard: required staging secrets
         env:
           A: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
@@ -28,9 +31,6 @@ jobs:
           [ -n "$C" ] || { echo "::error::STAGING_SSH_PORT is empty"; exit 1; }
           [ -n "$D" ] || { echo "::error::STAGING_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::STAGING_APP_DIR is empty"; exit 1; }
-
-      - name: Info
-          run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
 
       - name: Install SSH key (no agent)
         env:
@@ -58,6 +58,5 @@ jobs:
           set -e
           SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
           if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
-
           ssh -i ~/.ssh/id_deploy $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
             "BRANCH='$REF' APP_DIR='$APP_DIR' ONLY=staging /opt/summitcare/deploy.sh"

@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Branch or tag to deploy (e.g. feature branch)"
+        description: "Branch or tag to deploy (e.g. a feature branch)"
         required: true
         default: "base44-reset"
       pr_number:
-        description: "Optional PR number (for your own logging)"
+        description: "Optional PR number (for logging)"
         required: false
 
 jobs:
@@ -18,7 +18,10 @@ jobs:
       name: preview
 
     steps:
-      - name: Guard: required staging secrets
+      - name: Info
+        run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }} (PR=${{ github.event.inputs.pr_number || 'n/a' }})"
+
+      - name: Guard: required preview secrets
         env:
           A: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
           B: ${{ secrets.PREVIEW_DEPLOY_HOST }}
@@ -31,9 +34,6 @@ jobs:
           [ -n "$C" ] || { echo "::error::PREVIEW_SSH_PORT is empty"; exit 1; }
           [ -n "$D" ] || { echo "::error::PREVIEW_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::PREVIEW_APP_DIR is empty"; exit 1; }
-
-      - name: Info
-          run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
 
       - name: Install SSH key (no agent)
         env:
@@ -62,6 +62,5 @@ jobs:
           set -e
           SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
           if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
-
           ssh -i ~/.ssh/id_deploy $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
             "BRANCH='$REF' APP_DIR='$APP_DIR' ONLY=preview PR_NUMBER='${PR_NUMBER}' /opt/summitcare/deploy.sh"
