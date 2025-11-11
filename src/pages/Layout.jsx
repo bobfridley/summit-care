@@ -1,0 +1,305 @@
+
+
+import React, { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Mountain, Pill, Database, FileText, Home, Bot as BotIcon, Image as ImageIcon, AlertTriangle, Shield, MessageSquare } from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import DemoDisclaimer from "@/components/common/DemoDisclaimer";
+import { base44 } from "@/api/base44Client";
+import { Toaster } from "sonner";
+
+const allNavigationItems = [
+  {
+    title: "Overview",
+    url: createPageUrl("dashboard"),
+    icon: Home,
+    adminOnly: false,
+  },
+  {
+    title: "My Climbs",
+    url: createPageUrl("climbs"),
+    icon: Mountain,
+    adminOnly: false,
+  },
+  {
+    title: "My Medications",
+    url: createPageUrl("medications"),
+    icon: Pill,
+    adminOnly: false,
+  },
+  {
+    title: "Medication Database",
+    url: createPageUrl("database"),
+    icon: Database,
+    adminOnly: false,
+  },
+  {
+    title: "Trip Reports",
+    url: createPageUrl("reports"),
+    icon: FileText,
+    adminOnly: false,
+  },
+  {
+    title: "Summit Assistant",
+    url: createPageUrl("summit-assistant"),
+    icon: MessageSquare,
+    adminOnly: false,
+    featured: true,
+  },
+  {
+    title: "AI Assistant",
+    url: createPageUrl("ai-playground"),
+    icon: BotIcon,
+    adminOnly: true,
+  },
+  {
+    title: "Brand Assets",
+    url: createPageUrl("brand-assets"),
+    icon: ImageIcon,
+    adminOnly: true,
+  },
+  {
+    title: "DB Access Helper",
+    url: createPageUrl("db-access-help"),
+    icon: Database,
+    adminOnly: true,
+  },
+  {
+    title: "MySQL Schema",
+    url: createPageUrl("mysql-schema"),
+    icon: FileText,
+    adminOnly: true,
+  },
+  {
+    title: "MySQL Sample Data",
+    url: createPageUrl("mysql-sample-data"),
+    icon: FileText,
+    adminOnly: true,
+  },
+  {
+    title: "Cert Debugger",
+    url: createPageUrl("cert-debug"),
+    icon: Shield,
+    adminOnly: true,
+  },
+  {
+    title: "Disclaimer",
+    url: createPageUrl("disclaimer"),
+    icon: AlertTriangle,
+    variant: "danger",
+    adminOnly: false,
+  },
+];
+
+export default function Layout({ children, currentPageName }) {
+  const location = useLocation();
+  const [user, setUser] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Error loading user:", error);
+      }
+      setIsLoadingUser(false);
+    };
+    loadUser();
+  }, []);
+
+  // Close sidebar on navigation (mobile)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Load Google Fonts
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+
+    return () => {
+      const existingLink = document.querySelector(`link[href="${link.href}"]`);
+      if (existingLink) {
+        document.head.removeChild(existingLink);
+      }
+    };
+  }, []);
+
+  // Filter navigation items based on user role
+  const navigationItems = allNavigationItems.filter(item => {
+    if (item.adminOnly && user?.role !== 'admin') {
+      return false;
+    }
+    return true;
+  });
+
+  const medicationPages = new Set(["medications", "database"]);
+  const showDisclaimer = medicationPages.has(currentPageName);
+
+  const isAdmin = user?.role === 'admin';
+
+  return (
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <div className="min-h-screen flex w-full">
+        <style>{`
+          :root {
+            --primary-green: #2D5016;
+            --secondary-green: #4A7C59;
+            --primary-blue: #4A6FA5;
+            --secondary-blue: #6B8CAE;
+            --accent-green: #8FBC8F;
+            --neutral-warm: #F7F6F4;
+            --text-primary: #1A1A1A;
+            --text-secondary: #4A4A4A;
+            --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          }
+          
+          * {
+            font-family: var(--font-inter);
+            font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+          }
+          
+          .mountain-gradient {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 50%, var(--primary-blue) 100%);
+          }
+          
+          .alpine-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(75, 111, 165, 0.1);
+          }
+          
+          h1 {
+            color: var(--primary-green);
+            font-weight: 700;
+            letter-spacing: -0.025em;
+          }
+          
+          h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            letter-spacing: -0.025em;
+          }
+          
+          .font-display {
+            font-weight: 800;
+            letter-spacing: -0.05em;
+          }
+        `}</style>
+        <Sidebar className="border-r border-stone-200 bg-neutral-warm">
+          <SidebarHeader className="border-b border-stone-200 p-6">
+            <Link 
+              to={createPageUrl("dashboard")} 
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity duration-200"
+            >
+              <div className="w-10 h-10 mountain-gradient rounded-lg flex items-center justify-center shadow-sm">
+                <Mountain className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="font-display text-lg text-text-primary">SummitCare</h2>
+                <p className="text-xs text-text-secondary font-medium">
+                  Altitude Medication Tracker
+                  {isAdmin && <span className="ml-2 text-primary-blue font-semibold">• Admin</span>}
+                </p>
+              </div>
+            </Link>
+          </SidebarHeader>
+          
+          <SidebarContent className="p-3">
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-semibold text-text-secondary uppercase tracking-wider px-3 py-2">
+                Navigation
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navigationItems.map((item) => {
+                    const isActive = location.pathname === item.url;
+                    const danger = item.variant === "danger";
+                    const featured = item.featured;
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton 
+                          asChild 
+                          className={`transition-all duration-300 rounded-xl mb-1 font-medium
+                            ${danger ? 'hover:bg-red-50 hover:text-red-600 text-red-600' : 'hover:bg-green-50 hover:text-green-800'}
+                            ${featured && !isActive ? 'bg-primary-blue/10 text-primary-blue border border-primary-blue/30' : ''}
+                            ${isActive ? (danger ? 'bg-red-600 text-white shadow-sm font-semibold' : 'bg-green-800 text-white shadow-sm font-semibold') : ''}
+                          `}
+                        >
+                          <Link to={item.url} className="flex items-center gap-3 px-3 py-3">
+                            <item.icon className="w-5 h-5" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <div className="mt-8 px-3">
+              <div className="alpine-card rounded-xl p-4 shadow-sm">
+                <div className="text-center">
+                  <Mountain className="w-8 h-8 text-primary-blue mx-auto mb-2" />
+                  <h3 className="text-sm font-semibold text-text-primary mb-1">Your Journey Matters</h3>
+                  <p className="text-xs text-text-secondary leading-relaxed font-medium">
+                    Track your climbs and medications with SummitCare.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </SidebarContent>
+        </Sidebar>
+
+        <main className="flex-1 flex flex-col bg-neutral-warm">
+          <header className="bg-white/80 backdrop-blur-sm border-b border-stone-200 px-6 py-4 md:hidden">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="hover:bg-stone-100 p-2 rounded-lg transition-colors duration-200" />
+              <h1 className="text-xl font-bold text-text-primary">SummitCare</h1>
+            </div>
+          </header>
+
+          <div className="flex-1 overflow-auto">
+            {showDisclaimer && (
+              <div className="px-4 md:px-6 pt-4">
+                <DemoDisclaimer />
+              </div>
+            )}
+            {children}
+          </div>
+        </main>
+
+        {/* Global floating AI Assistant button - only for admins */}
+        {isAdmin && (
+          <Link to={createPageUrl("ai-playground")} className="fixed bottom-5 right-5 z-50">
+            <Button className="mountain-gradient hover:opacity-90 transition-opacity shadow-xl rounded-full px-4 py-2 flex items-center gap-2">
+              <BotIcon className="w-4 h-4 text-white" />
+              <span className="hidden sm:inline text-white font-semibold">AI Assistant</span>
+            </Button>
+          </Link>
+        )}
+      </div>
+      <Toaster position="top-right" richColors />
+    </SidebarProvider>
+  );
+}
+
