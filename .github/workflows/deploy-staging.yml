@@ -34,13 +34,16 @@ jobs:
 
       - name: "Install SSH key (no agent)"
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
-          DEPLOY_HOST:     ${{ secrets.STAGING_DEPLOY_HOST }}
-          SSH_PORT:        ${{ secrets.STAGING_SSH_PORT }}
+          SSH_PRIVATE_KEY_B64: ${{ secrets.STAGING_SSH_PRIVATE_KEY_B64 }}
+          DEPLOY_HOST:         ${{ secrets.STAGING_DEPLOY_HOST }}
+          SSH_PORT:            ${{ secrets.STAGING_SSH_PORT }}
         run: |
+          set -e
           install -m 700 -d ~/.ssh
           umask 177
-          printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keygen -lf ~/.ssh/id_deploy || { echo "::error::invalid private key"; exit 1; }
           if [ -n "$SSH_PORT" ]; then
             ssh-keyscan -T 5 -p "$SSH_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           else
