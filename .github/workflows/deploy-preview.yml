@@ -14,8 +14,27 @@ on:
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
+    environment:
+      name: preview
 
     steps:
+      - name: Guard: required staging secrets
+        env:
+          A: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          B: ${{ secrets.PREVIEW_DEPLOY_HOST }}
+          C: ${{ secrets.PREVIEW_SSH_PORT }}
+          D: ${{ secrets.PREVIEW_DEPLOY_USER }}
+          E: ${{ secrets.PREVIEW_APP_DIR }}
+        run: |
+          [ -n "$A" ] || { echo "::error::PREVIEW_SSH_PRIVATE_KEY is empty"; exit 1; }
+          [ -n "$B" ] || { echo "::error::PREVIEW_DEPLOY_HOST is empty"; exit 1; }
+          [ -n "$C" ] || { echo "::error::PREVIEW_SSH_PORT is empty"; exit 1; }
+          [ -n "$D" ] || { echo "::error::PREVIEW_DEPLOY_USER is empty"; exit 1; }
+          [ -n "$E" ] || { echo "::error::PREVIEW_APP_DIR is empty"; exit 1; }
+
+      - name: Info
+          run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
+
       - name: Install SSH key (no agent)
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}

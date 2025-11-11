@@ -11,8 +11,27 @@ on:
 jobs:
   deploy-prod:
     runs-on: ubuntu-latest
+    environment:
+      name: production
 
     steps:
+      - name: Guard: required staging secrets
+        env:
+          A: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          B: ${{ secrets.PROD_DEPLOY_HOST }}
+          C: ${{ secrets.PROD_SSH_PORT }}
+          D: ${{ secrets.PROD_DEPLOY_USER }}
+          E: ${{ secrets.PROD_APP_DIR }}
+        run: |
+          [ -n "$A" ] || { echo "::error::PROD_SSH_PRIVATE_KEY is empty"; exit 1; }
+          [ -n "$B" ] || { echo "::error::PROD_DEPLOY_HOST is empty"; exit 1; }
+          [ -n "$C" ] || { echo "::error::PROD_SSH_PORT is empty"; exit 1; }
+          [ -n "$D" ] || { echo "::error::PROD_DEPLOY_USER is empty"; exit 1; }
+          [ -n "$E" ] || { echo "::error::PROD_APP_DIR is empty"; exit 1; }
+
+      - name: Info
+          run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
+
       - name: Install SSH key (no agent)
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}

@@ -11,8 +11,27 @@ on:
 jobs:
   deploy-staging:
     runs-on: ubuntu-latest
+    environment:
+      name: staging
 
     steps:
+      - name: Guard: required staging secrets
+        env:
+          A: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          B: ${{ secrets.STAGING_DEPLOY_HOST }}
+          C: ${{ secrets.STAGING_SSH_PORT }}
+          D: ${{ secrets.STAGING_DEPLOY_USER }}
+          E: ${{ secrets.STAGING_APP_DIR }}
+        run: |
+          [ -n "$A" ] || { echo "::error::STAGING_SSH_PRIVATE_KEY is empty"; exit 1; }
+          [ -n "$B" ] || { echo "::error::STAGING_DEPLOY_HOST is empty"; exit 1; }
+          [ -n "$C" ] || { echo "::error::STAGING_SSH_PORT is empty"; exit 1; }
+          [ -n "$D" ] || { echo "::error::STAGING_DEPLOY_USER is empty"; exit 1; }
+          [ -n "$E" ] || { echo "::error::STAGING_APP_DIR is empty"; exit 1; }
+
+      - name: Info
+          run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
+
       - name: Install SSH key (no agent)
         env:
           SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
