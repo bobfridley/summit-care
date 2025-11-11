@@ -36,7 +36,7 @@ jobs:
           echo "KEYID=$KEYID" >> $GITHUB_ENV
           echo "FPR=$FPR"     >> $GITHUB_ENV
 
-      - name: 'Guard: verify imported key matches expected'
+      - name: 'Guard:verify imported key matches expected'
         run: |
           EXP_KID="${{ vars.EXPECTED_GPG_KEYID }}"
           EXP_FPR="${{ vars.EXPECTED_GPG_FPR }}"

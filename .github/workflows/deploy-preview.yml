@@ -18,10 +18,10 @@ jobs:
       name: preview
 
     steps:
-      - name: Info
+      - name: "Info"
         run: echo "Deploying ${{ github.event.inputs.ref }} to preview (PR=${{ github.event.inputs.pr_number || 'n/a' }})"
 
-      - name: Guard: required preview secrets
+      - name: "Guard: required preview secrets"
         env:
           A: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
           B: ${{ secrets.PREVIEW_DEPLOY_HOST }}
@@ -35,7 +35,7 @@ jobs:
           [ -n "$D" ] || { echo "::error::PREVIEW_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::PREVIEW_APP_DIR is empty"; exit 1; }
 
-      - name: Install SSH key (no agent)
+      - name: "Install SSH key (no agent)"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
           DEPLOY_HOST:     ${{ secrets.PREVIEW_DEPLOY_HOST }}
@@ -50,7 +50,7 @@ jobs:
             ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
 
-      - name: Trigger server deploy (preview)
+      - name: "Trigger server deploy (preview)"
         env:
           DEPLOY_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}

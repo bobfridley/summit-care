@@ -15,10 +15,10 @@ jobs:
       name: staging
 
     steps:
-      - name: Info
+      - name: "Info"
         run: echo "Deploying ${{ github.event.inputs.ref }} to staging"
 
-      - name: Guard: required staging secrets
+      - name: "Guard: required staging secrets"
         env:
           A: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           B: ${{ secrets.STAGING_DEPLOY_HOST }}
@@ -32,7 +32,7 @@ jobs:
           [ -n "$D" ] || { echo "::error::STAGING_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::STAGING_APP_DIR is empty"; exit 1; }
 
-      - name: Install SSH key (no agent)
+      - name: "Install SSH key (no agent)"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           DEPLOY_HOST:     ${{ secrets.STAGING_DEPLOY_HOST }}
@@ -47,7 +47,7 @@ jobs:
             ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
 
-      - name: Trigger server deploy (staging)
+      - name: "Trigger server deploy (staging)"
         env:
           DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}

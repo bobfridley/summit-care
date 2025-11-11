@@ -15,10 +15,10 @@ jobs:
       name: production
 
     steps:
-      - name: Info
+      - name: "Info"
         run: echo "Deploying ${{ github.event.inputs.ref }} to production"
 
-      - name: Guard: required production secrets
+      - name: "Guard: required production secrets"
         env:
           A: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           B: ${{ secrets.PROD_DEPLOY_HOST }}
@@ -32,7 +32,7 @@ jobs:
           [ -n "$D" ] || { echo "::error::PROD_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::PROD_APP_DIR is empty"; exit 1; }
 
-      - name: Install SSH key (no agent)
+      - name: "Install SSH key (no agent)"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           DEPLOY_HOST:     ${{ secrets.PROD_DEPLOY_HOST }}
@@ -47,7 +47,7 @@ jobs:
             ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
 
-      - name: Trigger server deploy (production)
+      - name: "Trigger server deploy (production)"
         env:
           DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}

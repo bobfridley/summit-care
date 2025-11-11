@@ -16,10 +16,10 @@ jobs:
       name: staging
 
     steps:
-      - name: Info
+      - name: "Info"
         run: echo "Running deploy check for staging"
 
-      - name: Guard: required staging secrets
+      - name: "Guard: required staging secrets"
         env:
           A: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           B: ${{ secrets.STAGING_DEPLOY_HOST }}
@@ -33,7 +33,7 @@ jobs:
           [ -n "$D" ] || { echo "::error::STAGING_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::STAGING_APP_DIR is empty"; exit 1; }
 
-      - name: Install SSH key (no agent)
+      - name: "Install SSH key (no agent)"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           DEPLOY_HOST:     ${{ secrets.STAGING_DEPLOY_HOST }}
@@ -48,7 +48,7 @@ jobs:
             ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
 
-      - name: Check dist & asset via SSH
+      - name: "Check dist & asset via SSH"
         env:
           DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
@@ -67,7 +67,7 @@ jobs:
             [ -n \"\$f\" ] && echo \"Found asset: \$f\" || (echo '❌ no assets found' && exit 1)
           "
 
-      - name: Curl through NGINX
+      - name: "Curl through NGINX"
         run: |
           echo "🔎 Curling https://healthandhiking.com/summit-care-staging"
           curl -sI "https://healthandhiking.com/summit-care-staging" | head -n1 || true
@@ -79,10 +79,10 @@ jobs:
       name: production
 
     steps:
-      - name: Info
+      - name: "Info"
         run: echo "Running deploy check for production"
 
-      - name: Guard: required production secrets
+      - name: "Guard: required production secrets"
         env:
           A: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           B: ${{ secrets.PROD_DEPLOY_HOST }}
@@ -96,7 +96,7 @@ jobs:
           [ -n "$D" ] || { echo "::error::PROD_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::PROD_APP_DIR is empty"; exit 1; }
 
-      - name: Install SSH key (no agent)
+      - name: "Install SSH key (no agent)"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           DEPLOY_HOST:     ${{ secrets.PROD_DEPLOY_HOST }}
@@ -111,7 +111,7 @@ jobs:
             ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
 
-      - name: Check dist & asset via SSH
+      - name: "Check dist & asset via SSH"
         env:
           DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
@@ -130,7 +130,7 @@ jobs:
             [ -n \"\$f\" ] && echo \"Found asset: \$f\" || (echo '❌ no assets found' && exit 1)
           "
 
-      - name: Curl through NGINX
+      - name: "Curl through NGINX"
         run: |
           echo "🔎 Curling https://healthandhiking.com/summit-care"
           curl -sI "https://healthandhiking.com/summit-care" | head -n1 || true
@@ -142,10 +142,10 @@ jobs:
       name: preview
 
     steps:
-      - name: Info
+      - name: "Info"
         run: echo "Running deploy check for preview"
 
-      - name: Guard: required preview secrets
+      - name: "Guard: required preview secrets"
         env:
           A: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
           B: ${{ secrets.PREVIEW_DEPLOY_HOST }}
@@ -159,7 +159,7 @@ jobs:
           [ -n "$D" ] || { echo "::error::PREVIEW_DEPLOY_USER is empty"; exit 1; }
           [ -n "$E" ] || { echo "::error::PREVIEW_APP_DIR is empty"; exit 1; }
 
-      - name: Install SSH key (no agent)
+      - name: "Install SSH key (no agent)"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
           DEPLOY_HOST:     ${{ secrets.PREVIEW_DEPLOY_HOST }}
@@ -174,7 +174,7 @@ jobs:
             ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
 
-      - name: Check dist & asset via SSH
+      - name: "Check dist & asset via SSH"
         env:
           DEPLOY_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
@@ -193,7 +193,7 @@ jobs:
             [ -n \"\$f\" ] && echo \"Found asset: \$f\" || (echo '❌ no assets found' && exit 1)
           "
 
-      - name: Curl through NGINX
+      - name: "Curl through NGINX"
         run: |
           echo "🔎 Curling https://healthandhiking.com/summit-care-preview"
           curl -sI "https://healthandhiking.com/summit-care-preview" | head -n1 || true
