@@ -1,69 +1,44 @@
+# .github/workflows/deploy-staging.yml
 name: Deploy (staging)
+
 on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Git ref (branch, tag, or commit SHA) to deploy'
-        required: false
-        default: 'main'
+        description: "Branch or tag to deploy"
+        required: true
+        default: "base44-reset"
 
 jobs:
   deploy-staging:
     runs-on: ubuntu-latest
-    environment: staging
     steps:
-      - name: Resolve secrets and set defaults
-        id: vars
+      - name: Install SSH key (no agent)
         env:
+          SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
           SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
-          APP_DIR: ${{ secrets.STAGING_APP_DIR }}
+        run: |
+          install -m 700 -d ~/.ssh
+          umask 177
+          printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          if [ -n "$SSH_PORT" ]; then
+            ssh-keyscan -T 5 -p "$SSH_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          fi
+
+      - name: Trigger server deploy (staging)
+        env:
+            DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
+            DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
+            SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+            APP_DIR:    ${{ secrets.STAGING_APP_DIR }}   # e.g. /var/www/summit-care
+            REF:        ${{ github.event.inputs.ref }}
         run: |
           set -e
-          for v in DEPLOY_HOST DEPLOY_USER APP_DIR; do
-            if [ -z "${!v}" ]; then echo "::error::$v is empty"; exit 1; fi
-          done
-          PORT="${SSH_PORT:-22}"
-          REF="${{ github.event.inputs.ref || 'main' }}"
-          echo "host=$DEPLOY_HOST"   >> "$GITHUB_OUTPUT"
-          echo "user=$DEPLOY_USER"   >> "$GITHUB_OUTPUT"
-          echo "port=$PORT"          >> "$GITHUB_OUTPUT"
-          echo "app_dir=$APP_DIR"    >> "$GITHUB_OUTPUT"
-          echo "ref=$REF"            >> "$GITHUB_OUTPUT"
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
 
-      - name: Debug resolved values
-        run: |
-          echo "Host:  ${{ steps.vars.outputs.host }}"
-          echo "User:  ${{ steps.vars.outputs.user }}"
-          echo "Port:  ${{ steps.vars.outputs.port }}"
-          echo "Dir:   ${{ steps.vars.outputs.app_dir }}"
-
-      - name: Add host key
-        run: |
-          mkdir -p ~/.ssh
-          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
-            ssh-keyscan -T 5 -p "${{ steps.vars.outputs.port }}" "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
-          else
-            ssh-keyscan -T 5 "${{ steps.vars.outputs.host }}" >> ~/.ssh/known_hosts
-          fi
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
-
-      # Recommended: call your server deploy script
-      - name: Trigger server deploy (staging)
-        run: |
-          CMD="BRANCH='${{ steps.vars.outputs.ref }}' ONLY=staging APP_DIR='${{ steps.vars.outputs.app_dir }}' /opt/summitcare/deploy.sh"
-          if [ "${{ steps.vars.outputs.port }}" != "22" ]; then
-            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes -p "${{ steps.vars.outputs.port }}" \
-              "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
-              "sudo -iu summitcare bash -lc \"$CMD\""
-          else
-            ssh -o StrictHostKeyChecking=yes -o BatchMode=yes \
-              "${{ steps.vars.outputs.user }}@${{ steps.vars.outputs.host }}" \
-              "sudo -iu summitcare bash -lc \"$CMD\""
-          fi
+          ssh -i ~/.ssh/id_deploy $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
+            "BRANCH='$REF' APP_DIR='$APP_DIR' ONLY=staging /opt/summitcare/deploy.sh"
