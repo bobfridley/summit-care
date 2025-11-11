@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Info
-        run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
+        run: echo "Deploying ${{ github.event.inputs.ref }} to staging"
 
       - name: Guard: required staging secrets
         env:
@@ -52,7 +52,7 @@ jobs:
           DEPLOY_USER: ${{ secrets.STAGING_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
           SSH_PORT:    ${{ secrets.STAGING_SSH_PORT }}
-          APP_DIR:     ${{ secrets.STAGING_APP_DIR }}     # e.g. /var/www/summit-care
+          APP_DIR:     ${{ secrets.STAGING_APP_DIR }}
           REF:         ${{ github.event.inputs.ref }}
         run: |
           set -e

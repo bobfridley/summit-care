@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Branch or tag to deploy (e.g. a feature branch)"
+        description: "Branch or tag to deploy (e.g. feature branch)"
         required: true
         default: "base44-reset"
       pr_number:
@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Info
-        run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }} (PR=${{ github.event.inputs.pr_number || 'n/a' }})"
+        run: echo "Deploying ${{ github.event.inputs.ref }} to preview (PR=${{ github.event.inputs.pr_number || 'n/a' }})"
 
       - name: Guard: required preview secrets
         env:
@@ -55,7 +55,7 @@ jobs:
           DEPLOY_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
           SSH_PORT:    ${{ secrets.PREVIEW_SSH_PORT }}
-          APP_DIR:     ${{ secrets.PREVIEW_APP_DIR }}  # e.g. /var/www/summit-care
+          APP_DIR:     ${{ secrets.PREVIEW_APP_DIR }}
           REF:         ${{ github.event.inputs.ref }}
           PR_NUMBER:   ${{ github.event.inputs.pr_number }}
         run: |

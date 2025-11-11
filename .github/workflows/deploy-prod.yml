@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Info
-        run: echo "Deploying ${{ github.event.inputs.ref }} to ${{ job.environment.name }}"
+        run: echo "Deploying ${{ github.event.inputs.ref }} to production"
 
       - name: Guard: required production secrets
         env:
@@ -52,7 +52,7 @@ jobs:
           DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
           SSH_PORT:    ${{ secrets.PROD_SSH_PORT }}
-          APP_DIR:     ${{ secrets.PROD_APP_DIR }}     # e.g. /var/www/summit-care
+          APP_DIR:     ${{ secrets.PROD_APP_DIR }}
           REF:         ${{ github.event.inputs.ref }}
         run: |
           set -e
