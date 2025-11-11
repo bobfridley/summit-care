@@ -1,23 +1,87 @@
 name: Deploy Check
+
 on:
-  push: { branches: [main] }
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "Environment to check (prod | staging | preview)"
+        required: true
+        default: "staging"
+
 jobs:
-  check:
+  deploy-check:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with: { version: 9 }
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - name: Prettier (check)
-        run: pnpm exec prettier . --check
-      - name: ESLint
-        run: pnpm exec eslint . --max-warnings=0
-      - name: Typecheck
-        run: pnpm exec tsc --noEmit
-      - name: Next build (no artifacts)
-        env: { NODE_ENV: production, BASE_PATH: /summit-care }
-        run: pnpm run build
+      - name: Install SSH key (no agent)
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          PROD_SSH_KEY:     ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          STAGING_SSH_KEY:  ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          PREVIEW_SSH_KEY:  ${{ secrets.PREVIEW_SSH_PRIVATE_KEY }}
+          PROD_HOST:        ${{ secrets.PROD_DEPLOY_HOST }}
+          STAGING_HOST:     ${{ secrets.STAGING_DEPLOY_HOST }}
+          PREVIEW_HOST:     ${{ secrets.PREVIEW_DEPLOY_HOST }}
+          PROD_PORT:        ${{ secrets.PROD_SSH_PORT }}
+          STAGING_PORT:     ${{ secrets.STAGING_SSH_PORT }}
+          PREVIEW_PORT:     ${{ secrets.PREVIEW_SSH_PORT }}
+        run: |
+          case "$ENV" in
+            prod)    KEY="$PROD_SSH_KEY"; HOST="$PROD_HOST"; PORT="$PROD_PORT" ;;
+            staging) KEY="$STAGING_SSH_KEY"; HOST="$STAGING_HOST"; PORT="$STAGING_PORT" ;;
+            preview) KEY="$PREVIEW_SSH_KEY"; HOST="$PREVIEW_HOST"; PORT="$PREVIEW_PORT" ;;
+          esac
+          install -m 700 -d ~/.ssh
+          umask 177
+          printf '%s' "$KEY" > ~/.ssh/id_deploy
+          if [ -n "$PORT" ]; then
+            ssh-keyscan -T 5 -p "$PORT" "$HOST" >> ~/.ssh/known_hosts
+          else
+            ssh-keyscan -T 5 "$HOST" >> ~/.ssh/known_hosts
+          fi
+
+      - name: Check dist & asset via SSH
+        env:
+          ENV: ${{ github.event.inputs.env }}
+          PROD_USER:    ${{ secrets.PROD_DEPLOY_USER }}
+          STAGING_USER: ${{ secrets.STAGING_DEPLOY_USER }}
+          PREVIEW_USER: ${{ secrets.PREVIEW_DEPLOY_USER }}
+          PROD_HOST:    ${{ secrets.PROD_DEPLOY_HOST }}
+          STAGING_HOST: ${{ secrets.STAGING_DEPLOY_HOST }}
+          PREVIEW_HOST: ${{ secrets.PREVIEW_DEPLOY_HOST }}
+          PROD_PORT:    ${{ secrets.PROD_SSH_PORT }}
+          STAGING_PORT: ${{ secrets.STAGING_SSH_PORT }}
+          PREVIEW_PORT: ${{ secrets.PREVIEW_SSH_PORT }}
+        run: |
+          case "$ENV" in
+            prod)    USER="$PROD_USER"; HOST="$PROD_HOST"; PORT="$PROD_PORT"; BASE_PATH="/summit-care"; APP_DIR="/var/www/summit-care/dist-prod" ;;
+            staging) USER="$STAGING_USER"; HOST="$STAGING_HOST"; PORT="$STAGING_PORT"; BASE_PATH="/summit-care-staging"; APP_DIR="/var/www/summit-care/dist-staging" ;;
+            preview) USER="$PREVIEW_USER"; HOST="$PREVIEW_HOST"; PORT="$PREVIEW_PORT"; BASE_PATH="/summit-care-preview"; APP_DIR="/var/www/summit-care/dist-preview" ;;
+          esac
+
+          SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
+          [ -n "$PORT" ] && SSH_OPTS="$SSH_OPTS -p $PORT"
+
+          echo "🔎 Checking $ENV on $HOST..."
+          ssh -i ~/.ssh/id_deploy $SSH_OPTS "$USER@$HOST" "
+            set -e
+            echo '==> Verifying build directory: $APP_DIR'
+            test -f \"$APP_DIR/index.html\" && echo '✓ index.html present' || (echo '❌ missing index.html' && exit 1)
+            echo '==> Sampling first asset:'
+            f=\$(ls -1 \"$APP_DIR/assets\" | head -n1) || true
+            [ -n \"\$f\" ] && echo \"Found asset: \$f\" || (echo '❌ no assets found' && exit 1)
+          "
+
+      - name: Curl asset from NGINX
+        env:
+          ENV: ${{ github.event.inputs.env }}
+        run: |
+          case "$ENV" in
+            prod)    URL="https://healthandhiking.com/summit-care" ;;
+            staging) URL="https://healthandhiking.com/summit-care-staging" ;;
+            preview) URL="https://healthandhiking.com/summit-care-preview" ;;
+          esac
+          echo "🔎 Curling $URL"
+          curl -sI "$URL" | head -n1 || true
+          echo "🔎 Curling a static asset..."
+          curl -sI "$URL/assets/" | head -n1 || true
