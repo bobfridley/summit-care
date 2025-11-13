@@ -1,14 +1,13 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import App from './App.jsx'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import Pages from "@/pages";
+import "@/index.css";
+import { AuthProvider } from "@/context/AuthContext";
 
-const basename = import.meta.env.BASE_URL || import.meta.env.VITE_BASE_PATH || '/'
-
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter basename={basename}>
-      <App />
-    </BrowserRouter>
+    <AuthProvider>
+      <Pages />
+    </AuthProvider>
   </React.StrictMode>
-)
+);

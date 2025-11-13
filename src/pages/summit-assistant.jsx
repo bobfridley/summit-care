@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { authClient } from "@/api/authClient"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +30,7 @@ export default function SummitAssistant() {
   useEffect(() => {
     const initConversation = async () => {
       try {
-        const conversation = await base44.agents.createConversation({
+        const conversation = await authClient.agents.createConversation({
           agent_name: "summit_assistant",
           metadata: {
             name: "Summit Assistant Chat",
@@ -68,7 +68,7 @@ export default function SummitAssistant() {
   useEffect(() => {
     if (!conversationId) return;
 
-    const unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
+    const unsubscribe = authClient.agents.subscribeToConversation(conversationId, (data) => {
       setMessages(data.messages || []);
       setIsLoading(false);
     });
@@ -85,8 +85,8 @@ export default function SummitAssistant() {
     setError("");
 
     try {
-      const conversation = await base44.agents.getConversation(conversationId);
-      await base44.agents.addMessage(conversation, {
+      const conversation = await authClient.agents.getConversation(conversationId);
+      await authClient.agents.addMessage(conversation, {
         role: "user",
         content: textToSend
       });
@@ -108,7 +108,7 @@ export default function SummitAssistant() {
     }
   };
 
-  const whatsappURL = base44.agents.getWhatsAppConnectURL('summit_assistant');
+  const whatsappURL = authClient.agents.getWhatsAppConnectURL('summit_assistant');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-warm via-white to-stone-50 p-4 md:p-8">
