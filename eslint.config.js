@@ -5,25 +5,33 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: [
-    'dist',
-    "node_modules/**",
-    "dist/**",
-    "build/**",
-    ".next/**",
-    "coverage/**",
-    // Legacy / Node / build files we don't want to lint right now
-    "server/**",
-    "scripts/**",
-    "lib/**",
-    "api/**",
-    "postcss.config.js",
-    "vite.config.*.cjs",
-    "vite.config.*.mjs",
-    "tailwind.config.*.cjs",
-    "tailwind.config.*.mjs",
-    ".eslintrc.cjs"
-    ] },
+  {
+    ignores: [
+      // Dependencies
+      "node_modules/**",
+
+      // Next.js / builds
+      ".next/**",
+      ".next-*/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+
+      // Logs / misc
+      "*.log",
+
+      // Public build artifacts (optional)
+      "public/*.js",
+
+      // Config files that should not be linted
+      "postcss.config.js",
+      "vite.config.*.cjs",
+      "vite.config.*.mjs",
+      "tailwind.config.*.cjs",
+      "tailwind.config.*.mjs",
+      ".eslintrc.cjs",
+    ],
+  },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
