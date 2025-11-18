@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus, Wand2, Mountain, Save, AlertTriangle } from "lucide-react";
+import { Plus, Mountain, Save, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
@@ -45,11 +44,11 @@ export default function ClimbsPage() {
     const handleClick = (e) => {
       if (!hasFormChanges) return;
 
-      const link = e.target.closest('a');
+      const link = e.target.closest("a");
       if (!link) return;
 
-      const href = link.getAttribute('href');
-      if (!href || href.startsWith('#') || href.startsWith('http')) return;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("#") || href.startsWith("http")) return;
 
       e.preventDefault();
       e.stopPropagation();
@@ -58,8 +57,8 @@ export default function ClimbsPage() {
       setShowNavigationDialog(true);
     };
 
-    document.addEventListener('click', handleClick, true);
-    return () => document.removeEventListener('click', handleClick, true);
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
   }, [hasFormChanges]);
 
   // Browser refresh/close warning
@@ -67,36 +66,62 @@ export default function ClimbsPage() {
     const handleBeforeUnload = (e) => {
       if (hasFormChanges) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasFormChanges]);
 
   useEffect(() => {
     loadClimbs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Normalize whatever mysqlClimbs returns into the shape our UI expects
+  const normalizeClimb = (raw) => {
+    if (!raw) return raw;
+
+    return {
+      ...raw,
+      // ensure these are always present
+      mountain_name: raw.mountain_name ?? raw.name ?? "",
+      location: raw.location ?? raw.region ?? raw.area ?? "",
+      // make sure planned_start_date exists for the form + card
+      planned_start_date:
+        raw.planned_start_date ?? raw.start_date ?? raw.date ?? null,
+    };
+  };
 
   const loadClimbs = async () => {
     setIsLoading(true);
     setError("");
     try {
-      const { data } = await mysqlClimbs({ 
-        action: "list", 
-        order: "planned_start_date", 
+      const { data } = await mysqlClimbs({
+        action: "list",
+        order: "planned_start_date",
         dir: "DESC",
-        include_gear: true
+        include_gear: true,
       });
+
       if (data?.ok) {
-        setClimbs(data.items || []);
+        const items = (data.items || []).map(normalizeClimb);
+        setClimbs(items);
+        // Optional: sanity check in console
+        if (items.length > 0) {
+          console.log("ClimbsPage: first normalized climb", items[0]);
+        }
       } else {
         setError(data?.error || "Failed to load climbs");
       }
     } catch (error) {
       console.error("Error loading climbs:", error);
-      setError(error?.response?.data?.error || error?.message || "Failed to load climbs");
+      setError(
+        error?.response?.data?.error ||
+          error?.message ||
+          "Failed to load climbs",
+      );
     }
     setIsLoading(false);
   };
@@ -106,10 +131,10 @@ export default function ClimbsPage() {
     setIsSaving(true);
     try {
       if (editingClimb) {
-        const { data } = await mysqlClimbs({ 
-          action: "update", 
-          id: editingClimb.id, 
-          payload: climbData 
+        const { data } = await mysqlClimbs({
+          action: "update",
+          id: editingClimb.id,
+          ...climbData, // flatten here
         });
         if (!data?.ok) {
           setError(data?.error || "Failed to update climb");
@@ -117,9 +142,9 @@ export default function ClimbsPage() {
           return;
         }
       } else {
-        const { data } = await mysqlClimbs({ 
-          action: "create", 
-          payload: climbData 
+        const { data } = await mysqlClimbs({
+          action: "create",
+          ...climbData, // flatten here
         });
         if (!data?.ok) {
           setError(data?.error || "Failed to create climb");
@@ -131,18 +156,24 @@ export default function ClimbsPage() {
       setEditingClimb(null);
       setInitialFormState(null);
       setCurrentFormData(null);
-      loadClimbs();
+      await loadClimbs();
     } catch (error) {
       console.error("Error saving climb:", error);
-      setError(error?.response?.data?.error || error?.message || "Failed to save climb");
+      setError(
+        error?.response?.data?.error ||
+          error?.message ||
+          "Failed to save climb",
+      );
     }
     setIsSaving(false);
   };
 
   const handleEdit = (climb) => {
-    setEditingClimb(climb);
-    setInitialFormState(JSON.stringify(climb));
-    setCurrentFormData(climb);
+    // Make sure the edit form sees the normalized shape too
+    const normalized = normalizeClimb(climb);
+    setEditingClimb(normalized);
+    setInitialFormState(JSON.stringify(normalized));
+    setCurrentFormData(normalized);
     setShowForm(true);
   };
 
@@ -164,7 +195,7 @@ export default function ClimbsPage() {
       backpack_name: "",
       base_pack_weight_kg: "",
       status: "planning",
-      notes: ""
+      notes: "",
     };
     setInitialFormState(JSON.stringify(emptyForm));
     setCurrentFormData(emptyForm);
@@ -212,10 +243,14 @@ export default function ClimbsPage() {
         setError(data?.error || "Failed to delete climb");
         return;
       }
-      loadClimbs();
+      await loadClimbs();
     } catch (error) {
       console.error("Error deleting climb:", error);
-      setError(error?.response?.data?.error || error?.message || "Failed to delete climb");
+      setError(
+        error?.response?.data?.error ||
+          error?.message ||
+          "Failed to delete climb",
+      );
     }
   };
 
@@ -224,21 +259,15 @@ export default function ClimbsPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-text-primary">My Climbs</h1>
-            <p className="text-text-secondary text-lg">Plan and track your mountaineering expeditions</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-text-primary">
+              My Climbs
+            </h1>
+            <p className="text-text-secondary text-lg">
+              Plan and track your mountaineering expeditions
+            </p>
           </div>
           <div className="flex gap-3">
-            <Link to={createPageUrl("ClimbGear")}>
-              <Button 
-                variant="outline"
-                disabled={isLoading}
-                className="shadow-sm"
-              >
-                <Wand2 className="w-5 h-5 mr-2" />
-                Update Gear
-              </Button>
-            </Link>
-            <Button 
+            <Button
               onClick={handleAddNew}
               className="mountain-gradient hover:opacity-90 transition-opacity shadow-lg"
             >
@@ -265,17 +294,22 @@ export default function ClimbsPage() {
           />
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
           {isLoading ? (
-            Array(6).fill(0).map((_, i) => (
-              <div key={i} className="h-64 bg-white rounded-xl animate-pulse" />
-            ))
+            Array(6)
+              .fill(0)
+              .map((_, i) => (
+                <div key={i} className="h-64 bg-white rounded-xl animate-pulse" />
+              ))
           ) : climbs.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <Mountain className="w-16 h-16 text-secondary-blue mx-auto mb-4 opacity-50" />
-              <h3 className="text-xl font-semibold text-text-primary mb-2">No climbs planned yet</h3>
+              <h3 className="text-xl font-semibold text-text-primary mb-2">
+                No climbs planned yet
+              </h3>
               <p className="text-text-secondary">
-                Start planning your first expedition to track gear and medications
+                Start planning your first expedition to track gear and
+                medications
               </p>
             </div>
           ) : (
@@ -300,7 +334,8 @@ export default function ClimbsPage() {
               Unsaved Changes
             </DialogTitle>
             <DialogDescription>
-              You have unsaved changes to your climb plan. Would you like to save before leaving?
+              You have unsaved changes to your climb plan. Would you like to
+              save before leaving?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:gap-2">

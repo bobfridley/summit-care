@@ -1,5 +1,5 @@
 // src/components/medications/MedicationForm.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,12 +43,10 @@ export default function MedicationForm({ medication, onSubmit, onCancel, onFormC
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  // Notify parent on every change
   useEffect(() => {
     onFormChange?.(formData);
   }, [formData, onFormChange]);
 
-  // Auto-fetch drug info on new entries
   useEffect(() => {
     const t = setTimeout(() => {
       if (formData.name && formData.name.length > 2 && !medication?.id) {
@@ -56,6 +54,7 @@ export default function MedicationForm({ medication, onSubmit, onCancel, onFormC
       }
     }, 1000);
     return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.name, medication?.id]);
 
   const fetchDrugInfo = async (medName) => {
@@ -246,7 +245,7 @@ export default function MedicationForm({ medication, onSubmit, onCancel, onFormC
             {infoError && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Couldn't fetch drug info</AlertTitle>
+                <AlertTitle>Couldn&#39;t fetch drug info</AlertTitle>
                 <AlertDescription>{infoError}</AlertDescription>
               </Alert>
             )}

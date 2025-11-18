@@ -1,5 +1,3 @@
-import React from "react";
-import { Card } from "@/components/ui/card";
 import { Scale, Package } from "lucide-react";
 
 export default function PackWeightSummary({ gear = [], basePackWeightKg = 0 }) {

@@ -1,5 +1,3 @@
-
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Shield, Mountain, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

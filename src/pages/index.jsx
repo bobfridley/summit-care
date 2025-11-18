@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import Reports from "./reports";
 import AiPlayground from "./ai-playground";
 import SummitAssistant from "./summit-assistant";

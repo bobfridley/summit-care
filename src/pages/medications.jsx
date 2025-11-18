@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, AlertTriangle, Save } from "lucide-react";
@@ -13,7 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { mysqlMedications } from "@/api/functions";
-
+import { motion } from "framer-motion";
+import DemoDisclaimer from "@/components/common/DemoDisclaimer";
 import MedicationForm from "../components/medications/MedicationForm";
 import MedicationList from "../components/medications/MedicationList";
 
@@ -186,7 +187,7 @@ export default function MedicationsPage() {
         const { data } = await mysqlMedications({ 
           action: "update", 
           id: editingMedication.id, 
-          payload: medicationData 
+          ...medicationData           // ⬅️ flatten
         });
         if (!data?.ok) {
           setError(data?.error || "Failed to update medication");
@@ -196,7 +197,7 @@ export default function MedicationsPage() {
       } else {
         const { data } = await mysqlMedications({ 
           action: "create", 
-          payload: medicationData 
+          ...medicationData           // ⬅️ flatten
         });
         if (!data?.ok) {
           setError(data?.error || "Failed to create medication");
@@ -324,6 +325,16 @@ export default function MedicationsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-warm via-white to-stone-50 p-4 md:p-8">
+      {/* Animated disclaimer */}
+      <motion.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="max-w-6xl mx-auto mb-4"
+      >
+        <DemoDisclaimer />
+      </motion.div>
+
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
           <div className="space-y-2">

@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +69,7 @@ export default function GearEditor({ gear, onChange }) {
       <CardContent className="p-6">
         {gear.length === 0 ? (
           <div className="text-center py-8 text-text-secondary">
-            <p className="mb-4">No gear items yet. Click "Add Item" or "Autofill recommendations" to get started.</p>
+            <p className="mb-4">No gear items yet. Click &#34;Add Item&#34; or &#34;Autofill recommendations&#34; to get started.</p>
           </div>
         ) : (
           <div className="space-y-6">

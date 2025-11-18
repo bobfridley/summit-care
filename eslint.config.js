@@ -5,7 +5,25 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist'] },
+  { ignores: [
+    'dist',
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".next/**",
+    "coverage/**",
+    // Legacy / Node / build files we don't want to lint right now
+    "server/**",
+    "scripts/**",
+    "lib/**",
+    "api/**",
+    "postcss.config.js",
+    "vite.config.*.cjs",
+    "vite.config.*.mjs",
+    "tailwind.config.*.cjs",
+    "tailwind.config.*.mjs",
+    ".eslintrc.cjs"
+    ] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -33,6 +51,7 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      "react/prop-types": "off",
     },
   },
 ]

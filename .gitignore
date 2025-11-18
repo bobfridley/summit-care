@@ -26,3 +26,7 @@ dist-ssr
 *.txt
 .DS_Store
 .env
+.env.*
+server/.env
+server/.env.*
+*.bak

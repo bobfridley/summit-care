@@ -4,6 +4,8 @@
 // @ts-check
 
 const API = import.meta.env.VITE_API_BASE || ""; // "" => same-origin during prod/preview
+// TEMP DEBUG
+console.log("VITE_API_BASE =", import.meta.env.VITE_API_BASE, "=> API =", API);
 // If you always want explicit host in dev, keep API as "http://localhost:3000"
 
 // ---------- Error types ----------
@@ -93,7 +95,7 @@ async function fetchWithTimeoutAndRetry(url, init, options = {}) {
       const res = await fetch(url, { ...init, signal: controller.signal });
       clearTimeout(timerId);
 
-      // Retry on 5xx
+            // Retry on 5xx
       if (res.status >= 500 && res.status <= 599 && attempt < retries) {
         attempt += 1;
         await delay(retryDelayMs * attempt);
@@ -101,14 +103,37 @@ async function fetchWithTimeoutAndRetry(url, init, options = {}) {
       }
 
       if (!res.ok) {
-        throw new ApiError(`Request failed with status ${res.status}`, {
+        let errorBody = null;
+        let message = `Request failed with status ${res.status}`;
+
+        try {
+          const text = await res.text();
+          if (text) {
+            try {
+              const json = JSON.parse(text);
+              errorBody = json;
+              if (json && typeof json.error === "string") {
+                message = json.error;
+              }
+            } catch {
+              // not JSON, keep as text
+              errorBody = { raw: text };
+            }
+          }
+        } catch {
+          // ignore body parsing errors
+        }
+
+        throw new ApiError(message, {
           status: res.status,
           url,
           context,
+          cause: errorBody,
         });
       }
 
       return res;
+
     } catch (err) {
       clearTimeout(timerId);
 
@@ -215,10 +240,55 @@ export function mysqlMedications({ action, ...payload }) {
   throw new Error(`Unknown action for mysqlMedications: ${action}`);
 }
 
-// ---- Climbs (dashboard cards)
-export function mysqlClimbs({ order = "planned_start_date", dir = "DESC", limit = 5 } = {}) {
-  const qs = new URLSearchParams({ order, dir, limit: String(limit) });
-  return jfetch(`/api/climbs?${qs.toString()}`, { method: "GET" });
+// Generic helper for climbs CRUD, used by My Climbs page
+export async function mysqlClimbs(params = {}) {
+  const {
+    action,
+    id,
+    order,
+    dir,
+    limit,
+    include_gear, // currently ignored, but kept for future
+    ...rest
+  } = params;
+
+  // LIST
+  if (action === "list") {
+    const qs = new URLSearchParams();
+    if (order) qs.set("order", order);
+    if (dir) qs.set("dir", dir);
+    if (limit) qs.set("limit", String(limit));
+
+    const query = qs.toString();
+    return jfetch(`/api/climbs${query ? `?${query}` : ""}`);
+  }
+
+  // CREATE
+  if (action === "create") {
+    return jfetch("/api/climbs", {
+      method: "POST",
+      body: rest,
+    });
+  }
+
+  // UPDATE
+  if (action === "update") {
+    if (!id) throw new Error("mysqlClimbs: update requires id");
+    return jfetch(`/api/climbs/${id}`, {
+      method: "PATCH",
+      body: rest,
+    });
+  }
+
+  // DELETE
+  if (action === "delete") {
+    if (!id) throw new Error("mysqlClimbs: delete requires id");
+    return jfetch(`/api/climbs/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  throw new Error(`mysqlClimbs: unknown action "${String(action)}"`);
 }
 
 // ---- Medication DB (optional)
@@ -236,21 +306,45 @@ export function getMedicationInfo({ medicationName = "" } = {}) {
 // ---- Gear helpers
 export function listGear(climbId) {
   if (!climbId) throw new Error("listGear: climbId is required");
-  return jfetch(`/api/climbs/${encodeURIComponent(climbId)}/gear`, { method: "GET" });
+  return jfetch(`/api/climbs/${encodeURIComponent(climbId)}/gear`, {
+    method: "GET",
+  });
 }
+
 export function createGear(climbId, item) {
   if (!climbId) throw new Error("createGear: climbId is required");
-  return jfetch(`/api/climbs/${encodeURIComponent(climbId)}/gear`, { method: "POST", body: item || {} });
+  return jfetch(`/api/climbs/${encodeURIComponent(climbId)}/gear`, {
+    method: "POST",
+    body: item || {},
+  });
 }
+
 export function updateGear(climbId, id, patch) {
-  if (!climbId || !id) throw new Error("updateGear: climbId and id are required");
-  return jfetch(`/api/climbs/${encodeURIComponent(climbId)}/gear/${encodeURIComponent(id)}`, { method: "PATCH", body: patch || {} });
+  if (!climbId || !id) {
+    throw new Error("updateGear: climbId and id are required");
+  }
+  return jfetch(
+    `/api/climbs/${encodeURIComponent(climbId)}/gear/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      body: patch || {},
+    },
+  );
 }
+
 export async function deleteGear(climbId, id) {
-  if (!climbId || !id) throw new Error("deleteGear: climbId and id are required");
-  await jfetch(`/api/climbs/${encodeURIComponent(climbId)}/gear/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!climbId || !id) {
+    throw new Error("deleteGear: climbId and id are required");
+  }
+  await jfetch(
+    `/api/climbs/${encodeURIComponent(climbId)}/gear/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+    },
+  );
   return { ok: true };
 }
+
 export function togglePacked(climbId, id, packed) {
   return updateGear(climbId, id, { packed: !!packed });
 }

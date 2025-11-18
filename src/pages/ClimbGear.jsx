@@ -1,24 +1,52 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { fetchGear as listGear, createGear, updateGear, deleteGear, togglePacked } from "@/api/functions";
-
+// src/pages/ClimbGear.jsx
+import { useEffect, useMemo, useState } from "react";
+import {
+  listGear,
+  createGear,
+  updateGear,
+  deleteGear,
+  togglePacked as togglePackedApi,
+} from "@/api/functions";
+import { useLocation, useParams, Link } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Ruler, PackageCheck, PackageOpen, Scale } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  Ruler,
+  PackageCheck,
+  Scale,
+  ArrowLeft,
+} from "lucide-react";
+import { createPageUrl } from "@/utils";
 
 // Enum options mirrored from your MySQL table
 const CATEGORIES = [
-  "safety", "clothing", "technical", "camping", "navigation", "health", "food_water", "other",
+  "safety",
+  "clothing",
+  "technical",
+  "camping",
+  "navigation",
+  "health",
+  "food_water",
+  "other",
 ];
 
 const IMPORTANCE = ["critical", "high", "recommended", "optional"];
 
 /**
  * Usage:
- * - Navigate to /climbgear?climbId=123
+ * - Navigate to /climb-gear?climbId=123&name=Pikes%20Peak
  *   or render <ClimbGear /> and pass `climbId` via prop.
  */
 export default function ClimbGear({ climbId: climbIdProp }) {
@@ -39,13 +67,95 @@ export default function ClimbGear({ climbId: climbIdProp }) {
     notes: "",
   });
 
-  // Accept climbId from prop or querystring
+  // Accept climbId + climbName from prop or querystring
+  const location = useLocation();
+  const params = useParams(); // handy for debugging if needed
+
   const climbId = useMemo(() => {
-    if (climbIdProp) return climbIdProp;
-    const u = new URL(window.location.href);
-    const v = u.searchParams.get("climbId");
-    return v ? Number(v) : null;
-  }, [climbIdProp]);
+    // 1) Explicit prop wins (if you ever embed this component)
+    if (climbIdProp != null) return Number(climbIdProp);
+
+    try {
+      const search = location?.search ?? window.location.search ?? "";
+      const qs = new URLSearchParams(search);
+
+      // Support both ?climbId=2 and ?climbid=2
+      const raw =
+        qs.get("climbId") ??
+        qs.get("climbid") ??
+        qs.get("CLIMBID");
+
+      if (raw != null && raw !== "") {
+        const n = Number(raw);
+        if (!Number.isNaN(n) && n > 0) return n;
+      }
+    } catch (e) {
+      console.warn("ClimbGear: failed to parse climbId from URL", e);
+    }
+
+    return null;
+  }, [climbIdProp, location?.search]);
+
+  // Resolve mountain/route name from query (?name=...)
+  const climbName = useMemo(() => {
+    try {
+      const search = location?.search ?? window.location.search ?? "";
+      const qs = new URLSearchParams(search);
+
+      const rawName =
+        qs.get("name") ??
+        qs.get("climbName") ??
+        qs.get("mountain_name");
+
+      if (rawName && rawName.trim() !== "") {
+        // URLSearchParams returns decoded strings already
+        return rawName;
+      }
+    } catch (e) {
+      console.warn("ClimbGear: failed to parse climb name from URL", e);
+    }
+    return null;
+  }, [location?.search]);
+
+  // Nice label: 📦 Gear for Pikes Peak / fallback
+  const titleLabel = climbName ? `📦 Gear for ${climbName}` : "Climb Gear";
+
+  // Compute "Last updated ..." from gear items' timestamps
+  const lastUpdatedLabel = useMemo(() => {
+    if (!items || items.length === 0) return null;
+
+    const timestamps = items
+      .map((it) => it.updated_at || it.created_at)
+      .filter(Boolean);
+
+    if (timestamps.length === 0) return null;
+
+    const latestMs = Math.max(
+      ...timestamps.map((ts) => {
+        const d = new Date(ts);
+        return d.getTime();
+      }),
+    );
+
+    if (!Number.isFinite(latestMs)) return null;
+
+    const latest = new Date(latestMs);
+
+    return latest.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }, [items]);
+
+  useEffect(() => {
+    console.log("ClimbGear: location =", location);
+    console.log("ClimbGear: params =", params);
+    console.log("ClimbGear: resolved climbId =", climbId);
+    console.log("ClimbGear: resolved climbName =", climbName);
+  }, [location, params, climbId, climbName]);
 
   async function refresh() {
     if (!climbId) {
@@ -56,34 +166,69 @@ export default function ClimbGear({ climbId: climbIdProp }) {
     try {
       setLoading(true);
       setErr("");
-      const [{ data: gearRes }, { data: sumRes }] = await Promise.all([
-        listGear(climbId),
-        gearSummary(climbId),
-      ]);
 
-      if (gearRes?.ok) setItems(gearRes.items ?? []);
-      else setErr(gearRes?.error || "Failed to load gear");
+      const { data: gearRes } = await listGear(climbId);
 
-      if (sumRes?.ok) setSum(sumRes);
-      else setErr((e) => e || sumRes?.error || "Failed to load summary");
+      if (!gearRes?.ok) {
+        setErr(gearRes?.error || "Failed to load gear");
+        setItems([]);
+        setSum(null);
+        return;
+      }
+
+      const nextItems = gearRes.items ?? [];
+      setItems(nextItems);
+
+      // Compute weight summary on the client
+      let total = 0;
+      let packed = 0;
+
+      for (const it of nextItems) {
+        const qty = Number(it.quantity ?? 1) || 1;
+        const wt = Number(it.estimated_weight_kg ?? 0) || 0;
+        const itemWeight = qty * wt;
+        total += itemWeight;
+        if (it.packed) packed += itemWeight;
+      }
+
+      const remaining = total - packed;
+
+      setSum({
+        ok: true,
+        totals: {
+          total_weight_kg: total,
+          packed_weight_kg: packed,
+          remaining_weight_kg: remaining,
+        },
+      });
     } catch (e) {
+      console.error("ClimbGear: error in refresh()", e);
       setErr(e.message || "Failed to load gear");
+      setItems([]);
+      setSum(null);
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { refresh(); }, [climbId]);
+  useEffect(() => {
+    if (!climbId) return; // don’t call refresh until we have an ID
+    refresh();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [climbId]);
 
   const handleQuickAdd = async () => {
-    if (!newItem.item_name.trim()) return;
+    if (!newItem.item_name.trim() || !climbId) return;
     try {
       const payload = {
         ...newItem,
         quantity: Number(newItem.quantity) || 1,
         required: newItem.required ? 1 : 0,
         packed: newItem.packed ? 1 : 0,
-        estimated_weight_kg: newItem.estimated_weight_kg === "" ? null : Number(newItem.estimated_weight_kg),
+        estimated_weight_kg:
+          newItem.estimated_weight_kg === ""
+            ? null
+            : Number(newItem.estimated_weight_kg),
       };
       await createGear(climbId, payload);
       setNewItem({
@@ -96,32 +241,68 @@ export default function ClimbGear({ climbId: climbIdProp }) {
         estimated_weight_kg: "",
         notes: "",
       });
-      refresh();
+      await refresh(); // always re-fetch from server
     } catch (e) {
-      setErr(e.message);
+      console.error("Quick add gear failed:", e);
+      setErr(e.message || "Failed to add gear item");
     }
   };
 
-  const togglePacked = async (it) => {
-    await updateGear(it.id, { packed: it.packed ? 0 : 1 });
-    refresh();
+  const handleTogglePacked = async (it) => {
+    if (!climbId) return;
+    try {
+      await togglePackedApi(climbId, it.id, !it.packed);
+      await refresh();
+    } catch (e) {
+      console.error("Toggle packed failed:", e);
+      setErr(e.message || "Failed to update packed status");
+    }
+  };
+
+  const handleToggleRequired = async (it) => {
+    if (!climbId) return;
+    try {
+      await updateGear(climbId, it.id, { required: it.required ? 0 : 1 });
+      await refresh();
+    } catch (e) {
+      console.error("Toggle required failed:", e);
+      setErr(e.message || "Failed to update required flag");
+    }
   };
 
   const updateQty = async (it, q) => {
-    const n = Math.max(1, Number(q) || 1);
-    await updateGear(it.id, { quantity: n });
-    refresh();
+    if (!climbId) return;
+    try {
+      const n = Math.max(1, Number(q) || 1);
+      await updateGear(climbId, it.id, { quantity: n });
+      await refresh();
+    } catch (e) {
+      console.error("Update quantity failed:", e);
+      setErr(e.message || "Failed to update quantity");
+    }
   };
 
   const updateWeight = async (it, w) => {
-    const val = w === "" ? null : Number(w);
-    await updateGear(it.id, { estimated_weight_kg: val });
-    refresh();
+    if (!climbId) return;
+    try {
+      const val = w === "" ? null : Number(w);
+      await updateGear(climbId, it.id, { estimated_weight_kg: val });
+      await refresh();
+    } catch (e) {
+      console.error("Update weight failed:", e);
+      setErr(e.message || "Failed to update weight");
+    }
   };
 
   const removeItem = async (id) => {
-    await deleteGear(id);
-    refresh();
+    if (!climbId) return;
+    try {
+      await deleteGear(climbId, id);
+      await refresh();
+    } catch (e) {
+      console.error("Delete gear failed:", e);
+      setErr(e.message || "Failed to delete gear item");
+    }
   };
 
   const totalKg = Number(sum?.totals?.total_weight_kg ?? 0);
@@ -129,13 +310,30 @@ export default function ClimbGear({ climbId: climbIdProp }) {
   const remainKg = Number(sum?.totals?.remaining_weight_kg ?? 0);
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
+    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-4">
+      {/* Back to climbs link */}
+      <div>
+        <Link
+          to={createPageUrl("climbs")}
+          className="inline-flex items-center gap-1 text-sm text-primary-blue hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to climbs
+        </Link>
+      </div>
+
       <Card className="alpine-card border-0 shadow-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PackageOpen className="w-5 h-5 text-primary-blue" />
-            Climb Gear {climbId ? <span className="text-stone-500 text-sm">• climb #{climbId}</span> : null}
-          </CardTitle>
+          <div className="flex flex-col gap-1">
+            <CardTitle className="flex items-center gap-2">
+              {titleLabel}
+            </CardTitle>
+            {lastUpdatedLabel && (
+              <span className="text-xs text-stone-500">
+                Last updated {lastUpdatedLabel}
+              </span>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? (
@@ -147,58 +345,90 @@ export default function ClimbGear({ climbId: climbIdProp }) {
               {/* Quick Add */}
               <div className="grid md:grid-cols-6 gap-3 items-end">
                 <div className="md:col-span-2">
-                  <label className="text-xs font-medium text-stone-600">Item name</label>
+                  <label className="text-xs font-medium text-stone-600">
+                    Item name
+                  </label>
                   <Input
                     placeholder="Ice Axe"
                     value={newItem.item_name}
-                    onChange={(e) => setNewItem((s) => ({ ...s, item_name: e.target.value }))}
+                    onChange={(e) =>
+                      setNewItem((s) => ({ ...s, item_name: e.target.value }))
+                    }
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-stone-600">Category</label>
+                  <label className="text-xs font-medium text-stone-600">
+                    Category
+                  </label>
                   <Select
                     value={newItem.category}
-                    onValueChange={(v) => setNewItem((s) => ({ ...s, category: v }))}
+                    onValueChange={(v) =>
+                      setNewItem((s) => ({ ...s, category: v }))
+                    }
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      {CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-stone-600">Importance</label>
+                  <label className="text-xs font-medium text-stone-600">
+                    Importance
+                  </label>
                   <Select
                     value={newItem.importance}
-                    onValueChange={(v) => setNewItem((s) => ({ ...s, importance: v }))}
+                    onValueChange={(v) =>
+                      setNewItem((s) => ({ ...s, importance: v }))
+                    }
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {IMPORTANCE.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      {IMPORTANCE.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-stone-600">Qty</label>
+                  <label className="text-xs font-medium text-stone-600">
+                    Qty
+                  </label>
                   <Input
                     type="number"
                     min={1}
                     value={newItem.quantity}
-                    onChange={(e) => setNewItem((s) => ({ ...s, quantity: e.target.value }))}
+                    onChange={(e) =>
+                      setNewItem((s) => ({ ...s, quantity: e.target.value }))
+                    }
                   />
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       checked={newItem.required}
-                      onCheckedChange={(v) => setNewItem((s) => ({ ...s, required: !!v }))}
+                      onCheckedChange={(v) =>
+                        setNewItem((s) => ({ ...s, required: !!v }))
+                      }
                     />
                     <span className="text-sm">Required</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Checkbox
                       checked={newItem.packed}
-                      onCheckedChange={(v) => setNewItem((s) => ({ ...s, packed: !!v }))}
+                      onCheckedChange={(v) =>
+                        setNewItem((s) => ({ ...s, packed: !!v }))
+                      }
                     />
                     <span className="text-sm">Packed</span>
                   </div>
@@ -210,14 +440,24 @@ export default function ClimbGear({ climbId: climbIdProp }) {
                     step="0.01"
                     placeholder="Weight (kg)"
                     value={newItem.estimated_weight_kg}
-                    onChange={(e) => setNewItem((s) => ({ ...s, estimated_weight_kg: e.target.value }))}
+                    onChange={(e) =>
+                      setNewItem((s) => ({
+                        ...s,
+                        estimated_weight_kg: e.target.value,
+                      }))
+                    }
                   />
                   <Input
                     placeholder="Notes (optional)"
                     value={newItem.notes}
-                    onChange={(e) => setNewItem((s) => ({ ...s, notes: e.target.value }))}
+                    onChange={(e) =>
+                      setNewItem((s) => ({ ...s, notes: e.target.value }))
+                    }
                   />
-                  <Button onClick={handleQuickAdd} className="flex items-center gap-2">
+                  <Button
+                    onClick={handleQuickAdd}
+                    className="flex items-center gap-2"
+                  >
                     <Plus className="w-4 h-4" /> Add
                   </Button>
                 </div>
@@ -245,7 +485,10 @@ export default function ClimbGear({ climbId: climbIdProp }) {
                   <div className="p-4 text-stone-600">No gear added yet.</div>
                 ) : (
                   items.map((it) => (
-                    <div key={it.id} className="p-3 grid md:grid-cols-12 gap-3 items-center">
+                    <div
+                      key={it.id}
+                      className="p-3 grid md:grid-cols-12 gap-3 items-center"
+                    >
                       <div className="md:col-span-4">
                         <div className="font-medium">{it.item_name}</div>
                         <div className="text-xs text-stone-500">
@@ -266,7 +509,9 @@ export default function ClimbGear({ climbId: climbIdProp }) {
                       </div>
 
                       <div className="md:col-span-3 flex items-center gap-2">
-                        <span className="text-xs text-stone-500">Weight (kg)</span>
+                        <span className="text-xs text-stone-500">
+                          Weight (kg)
+                        </span>
                         <Input
                           type="number"
                           step="0.01"
@@ -278,17 +523,28 @@ export default function ClimbGear({ climbId: climbIdProp }) {
 
                       <div className="md:col-span-2 flex items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <Checkbox checked={!!it.required} disabled />
+                          <Checkbox
+                            checked={!!it.required}
+                            onCheckedChange={() => handleToggleRequired(it)}
+                          />
                           <span className="text-sm">Required</span>
                         </div>
+
                         <div className="flex items-center gap-2">
-                          <Checkbox checked={!!it.packed} onCheckedChange={() => togglePacked(it)} />
+                          <Checkbox
+                            checked={!!it.packed}
+                            onCheckedChange={() => handleTogglePacked(it)}
+                          />
                           <span className="text-sm">Packed</span>
                         </div>
                       </div>
 
                       <div className="md:col-span-1 flex justify-end">
-                        <Button variant="ghost" className="text-red-600" onClick={() => removeItem(it.id)}>
+                        <Button
+                          variant="ghost"
+                          className="text-red-600"
+                          onClick={() => removeItem(it.id)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

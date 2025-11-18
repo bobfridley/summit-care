@@ -1,7 +1,7 @@
 // src/components/ErrorBanner.jsx
 // @ts-check
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { ApiError, TimeoutError } from "../api/functions";
 
 /**

@@ -1,5 +1,4 @@
 
-import React from "react";
 import { ListChecks } from "lucide-react";
 
 const categoryStyles = {

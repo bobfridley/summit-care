@@ -1,11 +1,10 @@
 
-import React, { useState, useEffect, useCallback } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useCallback } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Search, Filter, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
 import { mysqlMedicationDatabase } from "@/api/functions";
-
+import { motion } from "framer-motion";
+import DemoDisclaimer from "@/components/common/DemoDisclaimer";
 import DatabaseSearch from "../components/database/DatabaseSearch";
 import MedicationCard from "../components/database/MedicationCard";
 import DatabaseFilters from "../components/database/DatabaseFilters";
@@ -69,6 +68,15 @@ export default function DatabasePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-warm via-white to-stone-50 p-4 md:p-8">
+      {/* Animated disclaimer */}
+      <motion.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="max-w-6xl mx-auto mb-4"
+      >
+        <DemoDisclaimer />
+      </motion.div>
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-2">Medication Database</h1>

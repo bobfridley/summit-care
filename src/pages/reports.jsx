@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { mysqlMedications } from "@/api/functions";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, Calendar, AlertTriangle } from "lucide-react";
+import { Download, Calendar, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import TripPlanner from "../components/reports/TripPlanner";

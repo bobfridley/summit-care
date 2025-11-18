@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { authClient } from "@/api/authClient"
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,6 @@ export default function SummitAssistant() {
     initConversation();
   }, []);
 
-  // Auto-send question from URL parameter
   useEffect(() => {
     if (conversationId && !hasAutoSent) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -55,7 +54,6 @@ export default function SummitAssistant() {
         setInputValue(askParam);
         setHasAutoSent(true);
         
-        // Auto-send after a brief delay to let the UI render
         setTimeout(() => {
           handleSendMessage(askParam);
           // Clear URL parameter
@@ -63,6 +61,7 @@ export default function SummitAssistant() {
         }, 500);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, hasAutoSent]);
 
   useEffect(() => {
@@ -182,9 +181,9 @@ export default function SummitAssistant() {
                 <div className="mt-6 space-y-2 text-sm text-text-secondary">
                   <p className="font-medium">Try asking:</p>
                   <div className="space-y-1">
-                    <p>"What medications do I have that could be risky above 12,000 feet?"</p>
-                    <p>"Help me plan gear for my upcoming Rainier climb"</p>
-                    <p>"What's the weather forecast for Denali this week?"</p>
+                    <p>&#34;What medications do I have that could be risky above 12,000 feet?&#34;</p>
+                    <p>&#34;Help me plan gear for my upcoming Rainier climb&#34;</p>
+                    <p>&#34;What&#39;s the weather forecast for Denali this week?&#34;</p>
                   </div>
                 </div>
               </div>

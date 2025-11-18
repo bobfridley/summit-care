@@ -1,9 +1,21 @@
 // src/pages/dashboard.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { AlertTriangle, Shield, Mountain, Plus, Pill, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertTriangle,
+  Shield,
+  Mountain,
+  Plus,
+  Pill,
+  TrendingUp,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -28,35 +40,29 @@ export default function Dashboard() {
     setIsLoading(true);
     setError("");
 
-    // Accept many shapes: [], {items:[]}, {data:{items:[]}}, {ok:true, items:[]}, etc.
-    const unwrap = (res) => {
-      if (!res) return [];
-      if (Array.isArray(res)) return res;
-      if (Array.isArray(res.items)) return res.items;
-      if (res.data) {
-        if (Array.isArray(res.data)) return res.data;
-        if (Array.isArray(res.data.items)) return res.data.items;
-      }
-      return [];
-    };
-
     try {
-      const [medsRes, climbsRes] = await Promise.all([
-        mysqlMedications({ action: "list" }).catch(() => []),
-        mysqlClimbs({ order: "planned_start_date", dir: "DESC", limit: 5 }).catch(() => []),
+      // Use the same API shape as the My Climbs / Medications pages
+      const [{ data: medsData }, { data: climbsData }] = await Promise.all([
+        mysqlMedications({ action: "list" }),
+        mysqlClimbs({
+          action: "list",
+          order: "planned_start_date",
+          dir: "ASC",
+          limit: 50,
+        }),
       ]);
 
-      const meds = unwrap(medsRes);
-      const c = unwrap(climbsRes);
+      const meds = Array.isArray(medsData?.items) ? medsData.items : [];
+      const c = Array.isArray(climbsData?.items) ? climbsData.items : [];
 
-      setMedications(Array.isArray(meds) ? meds : []);
-      setClimbs(Array.isArray(c) ? c : []);
+      setMedications(meds);
+      setClimbs(c);
 
       if (!meds.length && !c.length) {
-        setError("No dashboard data available (using local stubs).");
+        setError("No dashboard data available yet.");
       }
     } catch (err) {
-      console.error("Error loading data:", err);
+      console.error("Error loading dashboard data:", err);
       setError(err?.message || "Failed to load dashboard data");
       setMedications([]);
       setClimbs([]);
@@ -79,16 +85,20 @@ export default function Dashboard() {
     if (riskCounts.high > 0) return "high";
     if (riskCounts.moderate > 0) return "moderate";
     return "low";
-    };
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-warm via-white to-stone-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-text-primary">SummitCare Overview</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-text-primary">
+              SummitCare Overview
+            </h1>
             <p className="text-text-secondary text-lg">
-              Track medications, plan climb gear, and estimate pack weight for safer ascents.
+              Track medications, plan climb gear, and estimate pack weight for
+              safer ascents.
             </p>
           </div>
           <div className="flex gap-3">
@@ -107,6 +117,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Error banner */}
         {error && (
           <Alert variant="destructive" className="mb-6">
             <AlertTriangle className="h-4 w-4" />
@@ -115,41 +126,58 @@ export default function Dashboard() {
           </Alert>
         )}
 
+        {/* Top stats row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* All Climbs (was "Planned Climbs") */}
           <Card className="alpine-card border-0 shadow-sm hover:shadow-md transition-shadow duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-text-secondary">Planned Climbs</CardTitle>
+                <CardTitle className="text-sm font-medium text-text-secondary">
+                  All Climbs
+                </CardTitle>
                 <Mountain className="w-5 h-5 text-primary-blue" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-text-primary">{climbs.length}</div>
-              <Badge variant="secondary" className="mt-2 bg-primary-blue/20 text-primary-blue">
-                Upcoming expeditions
+              <div className="text-2xl font-bold text-text-primary">
+                {climbs.length}
+              </div>
+              <Badge
+                variant="secondary"
+                className="mt-2 bg-primary-blue/20 text-primary-blue"
+              >
+                All expeditions
               </Badge>
             </CardContent>
           </Card>
 
+          {/* Total Medications */}
           <Card className="alpine-card border-0 shadow-sm hover:shadow-md transition-shadow duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-text-secondary">Total Medications</CardTitle>
+                <CardTitle className="text-sm font-medium text-text-secondary">
+                  Total Medications
+                </CardTitle>
                 <Pill className="w-5 h-5 text-primary-blue" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-text-primary">{medications.length}</div>
-              <Badge variant="secondary" className="mt-2 bg-accent-green/20 text-primary-green">
+              <div className="text-2xl font-bold text-text-primary">
+                {medications.length}
+              </div>
+              <Badge className="mt-2 bg-accent-green/20 text-primary-green border-transparent">
                 Active tracking
               </Badge>
             </CardContent>
           </Card>
 
+          {/* Risk Level */}
           <Card className="alpine-card border-0 shadow-sm hover:shadow-md transition-shadow duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-text-secondary">Risk Level</CardTitle>
+                <CardTitle className="text-sm font-medium text-text-secondary">
+                  Risk Level
+                </CardTitle>
                 <AlertTriangle
                   className={`w-5 h-5 ${
                     getOverallRisk() === "severe"
@@ -164,23 +192,34 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-text-primary capitalize">{getOverallRisk()}</div>
+              <div className="text-2xl font-bold text-text-primary capitalize">
+                {getOverallRisk()}
+              </div>
               <Badge variant="outline" className="mt-2">
                 Overall assessment
               </Badge>
             </CardContent>
           </Card>
 
+          {/* Safety Score */}
           <Card className="alpine-card border-0 shadow-sm hover:shadow-md transition-shadow duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-text-secondary">Safety Score</CardTitle>
+                <CardTitle className="text-sm font-medium text-text-secondary">
+                  Safety Score
+                </CardTitle>
                 <Shield className="w-5 h-5 text-primary-green" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-text-primary">
-                {Math.max(0, 100 - (getRiskCounts().high * 20 + getRiskCounts().severe * 40))}%
+                {Math.max(
+                  0,
+                  100 -
+                    (getRiskCounts().high * 20 +
+                      getRiskCounts().severe * 40),
+                )}
+                %
               </div>
               <Badge className="mt-2 bg-primary-green/10 text-primary-green border-primary-green/20">
                 <TrendingUp className="w-3 h-3 mr-1" />
@@ -190,15 +229,27 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Main content: climbs + meds panels */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <UpcomingClimbs climbs={climbs} isLoading={isLoading} />
-            <RiskOverview medications={medications} isLoading={isLoading} riskCounts={getRiskCounts()} />
-            <RecentMedications medications={medications} isLoading={isLoading} />
+            <RiskOverview
+              medications={medications}
+              isLoading={isLoading}
+              riskCounts={getRiskCounts()}
+            />
+            <RecentMedications
+              medications={medications}
+              isLoading={isLoading}
+            />
           </div>
 
           <div className="space-y-6">
-            <AltitudeInsights medications={medications} climbs={climbs} overallRisk={getOverallRisk()} />
+            <AltitudeInsights
+              medications={medications}
+              climbs={climbs}
+              overallRisk={getOverallRisk()}
+            />
           </div>
         </div>
       </div>
