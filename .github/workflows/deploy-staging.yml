@@ -1,6 +1,10 @@
 name: Deploy (staging)
 
 on:
+  push:
+    branches:
+      - base44-reset
+
   workflow_dispatch:
     inputs:
       ref:
