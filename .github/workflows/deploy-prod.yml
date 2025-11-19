@@ -20,9 +20,9 @@ jobs:
 
     steps:
       - name: "Info"
-        run: echo "Deploying ${{ github.event.inputs.ref }} to production"
+        run: echo "Deploying ref '${{ github.event.inputs.ref || github.ref_name }}' to production"
 
-      - name: "Guard: required production secrets"
+      - name: "Guard: required prod secrets"
         env:
           A: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           B: ${{ secrets.PROD_DEPLOY_HOST }}
@@ -38,20 +38,23 @@ jobs:
 
       - name: "Install SSH key (no agent)"
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          DEPLOY_HOST:     ${{ secrets.PROD_DEPLOY_HOST }}
-          SSH_PORT:        ${{ secrets.PROD_SSH_PORT }}
+          SSH_PRIVATE_KEY_B64: ${{ secrets.PROD_SSH_PRIVATE_KEY_B64 }}
+          DEPLOY_HOST:         ${{ secrets.PROD_DEPLOY_HOST }}
+          SSH_PORT:            ${{ secrets.PROD_SSH_PORT }}
         run: |
+          set -e
           install -m 700 -d ~/.ssh
           umask 177
-          printf '%s' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keygen -lf ~/.ssh/id_deploy || { echo "::error::invalid private key"; exit 1; }
           if [ -n "$SSH_PORT" ]; then
             ssh-keyscan -T 5 -p "$SSH_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           else
             ssh-keyscan -T 5 "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           fi
 
-      - name: "Trigger server deploy (production)"
+      - name: "Trigger server deploy (prod)"
         env:
           DEPLOY_USER: ${{ secrets.PROD_DEPLOY_USER }}
           DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
@@ -63,4 +66,4 @@ jobs:
           SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
           if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
           ssh -i ~/.ssh/id_deploy $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
-            "BRANCH='$REF' APP_DIR='$APP_DIR' ONLY=prod /opt/summitcare/deploy.sh"
+            "REF='$REF' APP_DIR='$APP_DIR' ONLY=prod /opt/summitcare/deploy.sh"
