@@ -57,7 +57,7 @@ jobs:
           DEPLOY_HOST: ${{ secrets.PROD_DEPLOY_HOST }}
           SSH_PORT:    ${{ secrets.PROD_SSH_PORT }}
           APP_DIR:     ${{ secrets.PROD_APP_DIR }}
-          REF:         ${{ github.event.inputs.ref }}
+          REF:         ${{ github.event.inputs.ref || github.ref_name }}
         run: |
           set -e
           SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
