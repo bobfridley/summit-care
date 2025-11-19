@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: "Info"
-        run: echo "Deploying ${{ github.event.inputs.ref }} to staging"
+        run: echo "Deploying ref '${{ github.event.inputs.ref || github.ref_name }}' to staging"
 
       - name: "Guard: required staging secrets"
         env:
@@ -66,4 +66,4 @@ jobs:
           SSH_OPTS="-o StrictHostKeyChecking=yes -o BatchMode=yes"
           if [ -n "$SSH_PORT" ]; then SSH_OPTS="$SSH_OPTS -p $SSH_PORT"; fi
           ssh -i ~/.ssh/id_deploy $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
-            "BRANCH='$REF' APP_DIR='$APP_DIR' ONLY=staging /opt/summitcare/deploy.sh"
+            "REF='$REF' APP_DIR='$APP_DIR' ONLY=staging /opt/summitcare/deploy.sh"
