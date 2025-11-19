@@ -3,14 +3,14 @@ name: Deploy (staging)
 on:
   push:
     branches:
-      - base44-reset
+      - staging
 
   workflow_dispatch:
     inputs:
       ref:
         description: "Branch or tag to deploy"
         required: true
-        default: "base44-reset"
+        default: "staging"
 
 jobs:
   deploy-staging:
