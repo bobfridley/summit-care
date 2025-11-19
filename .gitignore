@@ -31,4 +31,3 @@ __MACOSX
 server/.env
 server/.env.*
 *.bak
-
